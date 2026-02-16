@@ -1,0 +1,164 @@
+<!doctype html>
+<html lang="tl">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
+    <title>AR Aircraft Demo</title>
+    <style>
+      html, body {
+        margin: 0;
+        height: 100%;
+        background: #000;
+        font-family: system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial, sans-serif;
+        color: #fff;
+      }
+      .app {
+        position: fixed;
+        inset: 0;
+      }
+      .overlay {
+        position: fixed;
+        top: 0;
+        left: 0;
+        right: 0;
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        padding: 10px 12px;
+        background: linear-gradient(to bottom, rgba(0,0,0,.55), rgba(0,0,0,0));
+        z-index: 10;
+      }
+      .title {
+        font-weight: 600;
+        font-size: 16px;
+      }
+      .hint {
+        font-size: 12px;
+        opacity: .9;
+      }
+      .controls {
+        position: fixed;
+        bottom: 10px;
+        left: 50%;
+        transform: translateX(-50%);
+        display: flex;
+        gap: 10px;
+        z-index: 10;
+      }
+      .btn {
+        background: rgba(255,255,255,.15);
+        backdrop-filter: blur(6px);
+        color: #fff;
+        border: 1px solid rgba(255,255,255,.25);
+        border-radius: 10px;
+        padding: 10px 14px;
+        font-size: 14px;
+        touch-action: manipulation;
+      }
+      .unsupported {
+        position: absolute;
+        inset: 0;
+        display: none;
+        align-items: center;
+        justify-content: center;
+        text-align: center;
+        padding: 24px;
+        background: #0a0a0a;
+      }
+      .unsupported.active { display: flex; }
+      a.marker-link { color: #7ec8ff; }
+    </style>
+    <!-- A-Frame and AR.js (marker-based WebAR; works on most mobile browsers) -->
+    <script src="https://aframe.io/releases/1.5.0/aframe.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/gh/jeromeetienne/AR.js/aframe/build/aframe-ar.js"></script>
+  </head>
+  <body>
+    <div class="app">
+      <div class="overlay">
+        <div class="title">AR Aircraft Demo</div>
+        <div class="hint">I-scan ang HIRO marker para lumabas ang modelo</div>
+      </div>
+
+      <div id="unsupported" class="unsupported">
+        <div>
+          <h2>WebAR hindi supported sa browser na ito</h2>
+          <p>Subukan ang pinakabagong Chrome o Safari sa mobile.</p>
+          <p>I-download ang marker dito: 
+            <a class="marker-link" href="https://raw.githubusercontent.com/AR-js-org/AR.js/master/data/images/HIRO.jpg" target="_blank" rel="noopener">HIRO marker</a>
+          </p>
+        </div>
+      </div>
+
+      <!-- Embedded para full-viewport at mobile-friendly -->
+      <a-scene
+        id="scene"
+        embedded
+        vr-mode-ui="enabled: false"
+        renderer="colorManagement: true; physicallyCorrectLights: true; antialias: true"
+        arjs="sourceType: webcam; debugUIEnabled: false; trackingMethod: best; patternRatio: 0.75">
+
+        <!-- Ambient + directional lights for better mobile rendering -->
+        <a-entity light="type: ambient; intensity: 0.7"></a-entity>
+        <a-entity light="type: directional; color: #ffffff; intensity: 0.9" position="1 2 1"></a-entity>
+
+        <!-- Marker (uses built-in HIRO pattern) -->
+        <a-marker preset="hiro">
+          <!-- Simple stylized airplane using primitives -->
+          <a-entity position="0 0 0" scale="0.8 0.8 0.8">
+            <!-- fuselage -->
+            <a-box color="#cccccc" depth="2.6" height="0.3" width="0.3" position="0 0 0"></a-box>
+            <!-- wings -->
+            <a-box color="#2aa9ff" depth="0.05" height="0.02" width="1.6" position="0 0 0.1"></a-box>
+            <a-box color="#2aa9ff" depth="0.05" height="0.02" width="1.6" position="0 0 -0.1"></a-box>
+            <!-- tail -->
+            <a-box color="#59d97a" depth="0.05" height="0.4" width="0.08" position="0 -0.15 -1.1" rotation="0 0 -20"></a-box>
+            <!-- engine pods -->
+            <a-cylinder color="#888888" radius="0.06" height="0.25" position="-0.45 -0.07 0.6" rotation="90 0 0"></a-cylinder>
+            <a-cylinder color="#888888" radius="0.06" height="0.25" position="0.45 -0.07 0.6" rotation="90 0 0"></a-cylinder>
+            <a-cylinder color="#888888" radius="0.06" height="0.25" position="-0.45 -0.07 -0.6" rotation="90 0 0"></a-cylinder>
+            <a-cylinder color="#888888" radius="0.06" height="0.25" position="0.45 -0.07 -0.6" rotation="90 0 0"></a-cylinder>
+
+            <!-- labels -->
+            <a-text value="Ailerons" color="#ff6b6b" width="2" position="0.7 0.15 0.6"></a-text>
+            <a-text value="Elevators" color="#00a3ff" width="2" position="0.1 0.3 -1.1"></a-text>
+            <a-text value="Rudder" color="#59d97a" width="2" position="-0.1 0.35 -1.15"></a-text>
+            <a-text value="Flaps" color="#ffd166" width="2" position="-0.8 0.12 0.6"></a-text>
+            <a-text value="Spoilers" color="#ffa500" width="2" position="0 0.18 0.2"></a-text>
+          </a-entity>
+        </a-marker>
+
+        <!-- Camera -->
+        <a-entity camera></a-entity>
+      </a-scene>
+
+      <div class="controls">
+        <button class="btn" id="toggleUI">Itago/Ipakita ang instructions</button>
+        <button class="btn" id="openMarker">Buksan ang HIRO marker</button>
+      </div>
+    </div>
+
+    <script>
+      const overlay = document.querySelector('.overlay');
+      const toggleBtn = document.getElementById('toggleUI');
+      const markerBtn = document.getElementById('openMarker');
+      const unsupported = document.getElementById('unsupported');
+
+      function isMobile() {
+        return /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
+      }
+
+      // Basic capability check: camera + getUserMedia
+      (async () => {
+        const supported = !!(navigator.mediaDevices && navigator.mediaDevices.getUserMedia);
+        if (!supported) unsupported.classList.add('active');
+      })();
+
+      toggleBtn.addEventListener('click', () => {
+        overlay.style.display = overlay.style.display === 'none' ? 'flex' : 'none';
+      });
+      markerBtn.addEventListener('click', () => {
+        window.open('https://raw.githubusercontent.com/AR-js-org/AR.js/master/data/images/HIRO.jpg', '_blank', 'noopener');
+      });
+    </script>
+  </body>
+</html>
