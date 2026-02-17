@@ -102,9 +102,9 @@
         <a-entity light="type: directional; color: #ffffff; intensity: 0.9" position="1 2 1"></a-entity>
 
         <!-- Marker (uses built-in HIRO pattern) -->
-        <a-marker preset="hiro">
+        <a-marker preset="hiro" id="hiroMarker">
           <!-- Simple stylized airplane using primitives -->
-          <a-entity position="0 0 0" scale="0.8 0.8 0.8">
+          <a-entity position="0 0.25 0" scale="1.1 1.1 1.1" animation__rot="property: rotation; to: 0 360 0; loop: true; dur: 8000; easing: linear">
             <!-- fuselage -->
             <a-box color="#cccccc" depth="2.6" height="0.3" width="0.3" position="0 0 0"></a-box>
             <!-- wings -->
@@ -125,6 +125,8 @@
             <a-text value="Flaps" color="#ffd166" width="2" position="-0.8 0.12 0.6"></a-text>
             <a-text value="Spoilers" color="#ffa500" width="2" position="0 0.18 0.2"></a-text>
           </a-entity>
+          <!-- visibility cue -->
+          <a-ring color="#ffffff" radius-inner="0.48" radius-outer="0.5" position="0 0.001 0"></a-ring>
         </a-marker>
 
         <!-- Camera -->
@@ -231,6 +233,12 @@
           window._previewStream = null;
         }
       });
+      // Marker detection events
+      const marker = document.getElementById('hiroMarker');
+      if (marker) {
+        marker.addEventListener('markerFound', () => log('HIRO marker found: dapat visible na ang modelo'));
+        marker.addEventListener('markerLost', () => log('HIRO marker lost: i-center at tamang distansya'));
+      }
     </script>
   </body>
 </html>
