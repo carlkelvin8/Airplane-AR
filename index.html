@@ -176,18 +176,18 @@
       startCamBtn.addEventListener('click', async () => {
         try {
           const stream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: { ideal: 'environment' } }, audio: false });
-          // Preview para siguradong tumatakbo ang camera; i-attach sa hidden video
+          // Fullscreen preview para makita ang camera habang naghihintay sa AR init
           let vid = document.getElementById('previewVideo');
           if (!vid) {
             vid = document.createElement('video');
             vid.id = 'previewVideo';
             vid.style.position = 'fixed';
-            vid.style.right = '10px';
-            vid.style.bottom = '110px';
-            vid.style.width = '120px';
-            vid.style.height = '80px';
-            vid.style.opacity = '0.6';
-            vid.style.zIndex = '10';
+            vid.style.inset = '0';
+            vid.style.width = '100vw';
+            vid.style.height = '100vh';
+            vid.style.objectFit = 'cover';
+            vid.style.zIndex = '1';
+            vid.style.pointerEvents = 'none';
             vid.muted = true;
             vid.autoplay = true;
             vid.playsInline = true;
@@ -196,9 +196,8 @@
           vid.srcObject = stream;
           await vid.play();
           unsupported.classList.remove('active');
-          log('Camera preview tumatakbo. Dapat mag-init ang AR in a moment.');
-          // Stop preview after a short while to free camera for AR.js if needed
-          setTimeout(() => { stream.getTracks().forEach(t => t.stop()); vid.remove(); }, 2500);
+          window._previewStream = stream;
+          log('Camera preview fullscreen: naghihintay sa AR init…');
         } catch (e) {
           unsupported.classList.add('active');
           log('Camera error: ' + (e && e.message ? e.message : e));
@@ -223,6 +222,14 @@
       sceneEl.addEventListener('camera-error', (e) => {
         unsupported.classList.add('active');
         log('AR camera error: ' + JSON.stringify(e && e.detail ? e.detail : e));
+      });
+      sceneEl.addEventListener('camera-init', () => {
+        const vid = document.getElementById('previewVideo');
+        if (vid) vid.remove();
+        if (window._previewStream) {
+          window._previewStream.getTracks().forEach(t => t.stop());
+          window._previewStream = null;
+        }
       });
     </script>
   </body>
