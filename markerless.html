@@ -70,6 +70,12 @@
       button.textContent = 'Start AR';
       document.body.appendChild(button);
       button.addEventListener('click', () => console.log('[WebXR] Start AR clicked'));
+      const startCamBtn = document.createElement('button');
+      startCamBtn.id = 'startCam';
+      startCamBtn.className = 'btn';
+      startCamBtn.style.bottom = '60px';
+      startCamBtn.textContent = 'Start Camera';
+      document.body.appendChild(startCamBtn);
 
       window.addEventListener('resize', () => {
         renderer.setSize(window.innerWidth, window.innerHeight);
@@ -138,6 +144,33 @@
         }
         button.style.display = 'none';
       }
+      startCamBtn.addEventListener('click', async () => {
+        try {
+          const stream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: { ideal: 'environment' } }, audio: false });
+          let vid = document.getElementById('previewVideo');
+          if (!vid) {
+            vid = document.createElement('video');
+            vid.id = 'previewVideo';
+            vid.style.position = 'fixed';
+            vid.style.inset = '0';
+            vid.style.width = '100vw';
+            vid.style.height = '100vh';
+            vid.style.objectFit = 'cover';
+            vid.style.zIndex = '1';
+            vid.style.pointerEvents = 'none';
+            vid.muted = true;
+            vid.autoplay = true;
+            vid.playsInline = true;
+            document.body.appendChild(vid);
+          }
+          vid.srcObject = stream;
+          await vid.play();
+          setTimeout(() => { stream.getTracks().forEach(t => t.stop()); vid.remove(); }, 2500);
+        } catch (e) {
+          unsupported.classList.add('active');
+          unsupportedMsg.innerHTML = '<h2>Camera blocked</h2><p>Allow camera permissions in site settings, then try again.</p>';
+        }
+      });
     </script>
   </head>
   <body>
