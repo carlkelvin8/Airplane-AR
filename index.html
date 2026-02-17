@@ -95,16 +95,16 @@
         embedded
         vr-mode-ui="enabled: false"
         renderer="colorManagement: true; physicallyCorrectLights: true; antialias: true"
-        arjs="sourceType: webcam; facingMode: environment; debugUIEnabled: false; trackingMethod: best; patternRatio: 0.75">
+        arjs="sourceType: webcam; facingMode: environment; debugUIEnabled: false; detectionMode: mono; maxDetectionRate: 30; patternRatio: 0.9">
 
         <!-- Ambient + directional lights for better mobile rendering -->
         <a-entity light="type: ambient; intensity: 0.7"></a-entity>
         <a-entity light="type: directional; color: #ffffff; intensity: 0.9" position="1 2 1"></a-entity>
 
-        <!-- Marker (uses built-in HIRO pattern) -->
-        <a-marker preset="hiro" id="hiroMarker">
+        <!-- Marker using explicit HIRO pattern file -->
+        <a-marker type="pattern" url="https://raw.githubusercontent.com/AR-js-org/AR.js/master/three.js/examples/marker-training/examples/pattern-files/pattern-hiro.patt" id="hiroMarker" smooth="true" smoothCount="10" smoothTolerance="0.01" smoothThreshold="5">
           <!-- Simple stylized airplane using primitives -->
-          <a-entity position="0 0.25 0" scale="1.1 1.1 1.1" animation__rot="property: rotation; to: 0 360 0; loop: true; dur: 8000; easing: linear">
+          <a-entity position="0 0.7 0" scale="1.4 1.4 1.4" animation__rot="property: rotation; to: 0 360 0; loop: true; dur: 8000; easing: linear">
             <!-- fuselage -->
             <a-box color="#cccccc" depth="2.6" height="0.3" width="0.3" position="0 0 0"></a-box>
             <!-- wings -->
