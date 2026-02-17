@@ -66,7 +66,14 @@
       button.className = 'btn';
       button.textContent = 'Start AR';
       document.body.appendChild(button);
-      button.addEventListener('click', () => console.log('[WebXR] Start AR clicked'));
+      button.addEventListener('click', async () => {
+        console.log('[WebXR] Start AR clicked');
+        try {
+          // Prime permission so AR session can start smoothly
+          const s = await navigator.mediaDevices.getUserMedia({ video: { facingMode: { ideal: 'environment' } }, audio: false });
+          s.getTracks().forEach(t => t.stop());
+        } catch (_) {}
+      });
       const startCamBtn = document.createElement('button');
       startCamBtn.id = 'startCam';
       startCamBtn.className = 'btn';
