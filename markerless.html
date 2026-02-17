@@ -1,5 +1,5 @@
 <!doctype html>
-<html lang="tl">
+<html lang="en">
   <head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
@@ -20,6 +20,7 @@
 
       const overlay = document.getElementById('overlay');
       const unsupported = document.getElementById('unsupported');
+      const unsupportedMsg = unsupported.querySelector('div');
 
       const renderer = new THREE.WebGLRenderer({ antialias:true, alpha:true });
       renderer.setPixelRatio(window.devicePixelRatio);
@@ -68,6 +69,7 @@
       button.className = 'btn';
       button.textContent = 'Start AR';
       document.body.appendChild(button);
+      button.addEventListener('click', () => console.log('[WebXR] Start AR clicked'));
 
       window.addEventListener('resize', () => {
         renderer.setSize(window.innerWidth, window.innerHeight);
@@ -119,10 +121,22 @@
         renderer.render(scene, camera);
       });
 
-      const supported = navigator.xr && navigator.xr.isSessionSupported ? await navigator.xr.isSessionSupported('immersive-ar').catch(()=>false) : false;
+      const hasXR = 'xr' in navigator;
+      let supported = false;
+      try { supported = hasXR && await navigator.xr.isSessionSupported('immersive-ar'); } catch (_) { supported = false; }
       const secure = location.protocol === 'https:' || location.hostname === 'localhost';
-      if (!supported || !secure) {
-        document.getElementById('unsupported').classList.add('active');
+      if (!secure) {
+        unsupported.classList.add('active');
+        unsupportedMsg.innerHTML = '<h2>Secure context required</h2><p>Open this page over HTTPS or localhost, then press Start AR.</p>';
+      } else if (!supported) {
+        unsupported.classList.add('active');
+        const isAndroid = /Android/i.test(navigator.userAgent);
+        if (isAndroid) {
+          unsupportedMsg.innerHTML = '<h2>AR not supported</h2><p>Install or update Google Play Services for AR (ARCore), then try again.</p><p><a style=\"color:#7ec8ff\" href=\"https://play.google.com/store/apps/details?id=com.google.ar.core\" target=\"_blank\" rel=\"noopener\">Open Play Store</a></p>';
+        } else {
+          unsupportedMsg.innerHTML = '<h2>AR not supported</h2><p>Your browser/device does not support WebXR AR. Use Chrome on Android.</p>';
+        }
+        button.style.display = 'none';
       }
     </script>
   </head>
@@ -130,12 +144,12 @@
     <div id="app">
       <div id="overlay" class="overlay">
         <div class="title">Markerless AR Aircraft</div>
-        <div class="hint">Tap para i-place ang airplane sa surface</div>
+        <div class="hint">Move phone to detect a surface, tap to place</div>
       </div>
       <div id="unsupported" class="unsupported">
         <div>
-          <h2>Markerless AR hindi available</h2>
-          <p>Subukan sa Chrome Android na may WebXR AR support at HTTPS.</p>
+          <h2>Markerless AR not available</h2>
+          <p>Use Chrome on Android with HTTPS, then press Start AR.</p>
         </div>
       </div>
     </div>
