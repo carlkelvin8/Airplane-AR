@@ -69,8 +69,8 @@
       a.marker-link { color: #7ec8ff; }
     </style>
     <!-- A-Frame and AR.js (marker-based WebAR; works on most mobile browsers) -->
-    <script src="https://aframe.io/releases/1.5.0/aframe.min.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/ar.js@3.4.5/aframe/build/aframe-ar.js"></script>
+    <script src="https://aframe.io/releases/1.2.0/aframe.min.js"></script>
+    <script src="https://raw.githack.com/AR-js-org/AR.js/master/aframe/build/aframe-ar.js"></script>
   </head>
   <body>
     <div class="app">
@@ -102,7 +102,7 @@
         <a-entity light="type: directional; color: #ffffff; intensity: 0.9" position="1 2 1"></a-entity>
 
         <!-- Marker using explicit HIRO pattern file -->
-        <a-marker type="pattern" url="https://raw.githubusercontent.com/AR-js-org/AR.js/master/three.js/examples/marker-training/examples/pattern-files/pattern-hiro.patt" id="hiroMarker" smooth="true" smoothCount="10" smoothTolerance="0.01" smoothThreshold="5">
+        <a-marker type="pattern" url="https://raw.githack.com/AR-js-org/AR.js/master/three.js/examples/marker-training/examples/pattern-files/pattern-hiro.patt" id="hiroMarker" smooth="true" smoothCount="10" smoothTolerance="0.01" smoothThreshold="5">
           <!-- Simple stylized airplane using primitives -->
           <a-entity position="0 0.7 0" scale="1.4 1.4 1.4" animation__rot="property: rotation; to: 0 360 0; loop: true; dur: 8000; easing: linear">
             <!-- fuselage -->
