@@ -7,12 +7,12 @@
     <style>
       html, body { margin:0; height:100%; background:#000; color:#fff; font-family:system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial, sans-serif }
       #app { position:fixed; inset:0 }
-      .overlay { position:fixed; top:0; left:0; right:0; display:flex; justify-content:space-between; align-items:center; padding:10px 12px; background:linear-gradient(to bottom, rgba(0,0,0,.55), rgba(0,0,0,0)); z-index:10 }
+      .overlay { position:fixed; top:0; left:0; right:0; display:flex; justify-content:space-between; align-items:center; padding:10px 12px; background:linear-gradient(to bottom, rgba(0,0,0,.55), rgba(0,0,0,0)); z-index:1000; pointer-events:none }
       .title { font-weight:600; font-size:16px }
       .hint { font-size:12px; opacity:.9 }
       .unsupported { position:absolute; inset:0; display:none; align-items:center; justify-content:center; text-align:center; padding:24px; background:#0a0a0a }
       .unsupported.active { display:flex }
-      .btn { position:fixed; bottom:12px; left:50%; transform:translateX(-50%); background:rgba(255,255,255,.15); border:1px solid rgba(255,255,255,.3); color:#fff; padding:10px 14px; border-radius:10px; z-index:10 }
+      .btn { position:fixed; bottom:12px; left:50%; transform:translateX(-50%); background:rgba(255,255,255,.15); border:1px solid rgba(255,255,255,.3); color:#fff; padding:10px 14px; border-radius:10px; z-index:2000; cursor:pointer; pointer-events:auto }
     </style>
     <script type="module">
       import * as THREE from 'https://unpkg.com/three@0.155.0/build/three.module.js';
@@ -74,15 +74,7 @@
           s.getTracks().forEach(t => t.stop());
         } catch (_) {}
       });
-      const startCamBtn = document.getElementById('startCam') || (() => {
-        const b = document.createElement('button');
-        b.id = 'startCam';
-        b.className = 'btn';
-        b.style.bottom = '60px';
-        b.textContent = 'Start Camera';
-        document.body.appendChild(b);
-        return b;
-      })();
+      const startCamBtn = document.getElementById('startCam');
       const fallbackBtn = document.createElement('button');
       fallbackBtn.id = 'fallbackAR';
       fallbackBtn.className = 'btn';
