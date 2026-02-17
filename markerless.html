@@ -165,11 +165,30 @@
           }
           vid.srcObject = stream;
           await vid.play();
-          setTimeout(() => { stream.getTracks().forEach(t => t.stop()); vid.remove(); }, 2500);
+          window._previewStream = stream;
+          startCamBtn.textContent = 'Stop Camera';
+          startCamBtn.onclick = () => {
+            if (window._previewStream) {
+              window._previewStream.getTracks().forEach(t => t.stop());
+              window._previewStream = null;
+            }
+            const v = document.getElementById('previewVideo');
+            if (v) v.remove();
+            startCamBtn.textContent = 'Start Camera';
+          };
         } catch (e) {
           unsupported.classList.add('active');
           unsupportedMsg.innerHTML = '<h2>Camera blocked</h2><p>Allow camera permissions in site settings, then try again.</p>';
         }
+      });
+      renderer.xr.addEventListener('sessionstart', () => {
+        const v = document.getElementById('previewVideo');
+        if (v) v.remove();
+        if (window._previewStream) {
+          window._previewStream.getTracks().forEach(t => t.stop());
+          window._previewStream = null;
+        }
+        startCamBtn.textContent = 'Start Camera';
       });
     </script>
   </head>
