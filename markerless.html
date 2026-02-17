@@ -76,6 +76,12 @@
       startCamBtn.style.bottom = '60px';
       startCamBtn.textContent = 'Start Camera';
       document.body.appendChild(startCamBtn);
+      const fallbackBtn = document.createElement('button');
+      fallbackBtn.id = 'fallbackAR';
+      fallbackBtn.className = 'btn';
+      fallbackBtn.style.bottom = '108px';
+      fallbackBtn.textContent = 'Open AR (Scene Viewer)';
+      document.body.appendChild(fallbackBtn);
 
       window.addEventListener('resize', () => {
         renderer.setSize(window.innerWidth, window.innerHeight);
@@ -144,6 +150,11 @@
         }
         button.style.display = 'none';
       }
+      fallbackBtn.addEventListener('click', () => {
+        const glb = encodeURIComponent('https://raw.githubusercontent.com/KhronosGroup/glTF-Sample-Models/master/2.0/CesiumAir/glTF-Binary/CesiumAir.glb');
+        const url = `https://arvr.google.com/scene-viewer/1.0?file=${glb}&mode=ar_preferred&title=Aircraft`;
+        window.location.href = url;
+      });
       startCamBtn.addEventListener('click', async () => {
         try {
           const stream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: { ideal: 'environment' } }, audio: false });
