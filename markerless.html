@@ -74,12 +74,15 @@
           s.getTracks().forEach(t => t.stop());
         } catch (_) {}
       });
-      const startCamBtn = document.createElement('button');
-      startCamBtn.id = 'startCam';
-      startCamBtn.className = 'btn';
-      startCamBtn.style.bottom = '60px';
-      startCamBtn.textContent = 'Start Camera';
-      document.body.appendChild(startCamBtn);
+      const startCamBtn = document.getElementById('startCam') || (() => {
+        const b = document.createElement('button');
+        b.id = 'startCam';
+        b.className = 'btn';
+        b.style.bottom = '60px';
+        b.textContent = 'Start Camera';
+        document.body.appendChild(b);
+        return b;
+      })();
       const fallbackBtn = document.createElement('button');
       fallbackBtn.id = 'fallbackAR';
       fallbackBtn.className = 'btn';
@@ -235,6 +238,7 @@
           <p>Use Chrome on Android with HTTPS, then press Start AR.</p>
         </div>
       </div>
+      <button class="btn" id="startCam" style="bottom:60px">Start Camera</button>
     </div>
   </body>
 </html>
