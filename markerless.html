@@ -15,9 +15,14 @@
       .btn { position:fixed; bottom:12px; left:50%; transform:translateX(-50%); background:rgba(255,255,255,.15); border:1px solid rgba(255,255,255,.3); color:#fff; padding:10px 14px; border-radius:10px; z-index:2000; cursor:pointer; pointer-events:auto }
     </style>
     <script type="module">
-      import * as THREE from 'https://unpkg.com/three@0.155.0/build/three.module.js';
-      import { ARButton } from 'https://unpkg.com/three@0.155.0/examples/jsm/webxr/ARButton.js';
-      import { DeviceOrientationControls } from 'https://unpkg.com/three@0.155.0/examples/jsm/controls/DeviceOrientationControls.js';
+      import * as THREE from 'https://cdn.jsdelivr.net/npm/three@0.155.0/build/three.module.js';
+      import { ARButton } from 'https://cdn.jsdelivr.net/npm/three@0.155.0/examples/jsm/webxr/ARButton.js';
+      let DeviceOrientationControls = null;
+      try {
+        ({ DeviceOrientationControls } = await import('https://cdn.jsdelivr.net/npm/three@0.155.0/examples/jsm/controls/DeviceOrientationControls.js'));
+      } catch (e) {
+        console.warn('DeviceOrientationControls import failed', e);
+      }
 
       const overlay = document.getElementById('overlay');
       const unsupported = document.getElementById('unsupported');
