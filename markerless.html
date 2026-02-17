@@ -1,0 +1,143 @@
+<!doctype html>
+<html lang="tl">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
+    <title>Markerless AR Aircraft</title>
+    <style>
+      html, body { margin:0; height:100%; background:#000; color:#fff; font-family:system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial, sans-serif }
+      #app { position:fixed; inset:0 }
+      .overlay { position:fixed; top:0; left:0; right:0; display:flex; justify-content:space-between; align-items:center; padding:10px 12px; background:linear-gradient(to bottom, rgba(0,0,0,.55), rgba(0,0,0,0)); z-index:10 }
+      .title { font-weight:600; font-size:16px }
+      .hint { font-size:12px; opacity:.9 }
+      .unsupported { position:absolute; inset:0; display:none; align-items:center; justify-content:center; text-align:center; padding:24px; background:#0a0a0a }
+      .unsupported.active { display:flex }
+      .btn { position:fixed; bottom:12px; left:50%; transform:translateX(-50%); background:rgba(255,255,255,.15); border:1px solid rgba(255,255,255,.3); color:#fff; padding:10px 14px; border-radius:10px; z-index:10 }
+    </style>
+    <script type="module">
+      import * as THREE from 'https://unpkg.com/three@0.155.0/build/three.module.js';
+      import { ARButton } from 'https://unpkg.com/three@0.155.0/examples/jsm/webxr/ARButton.js';
+
+      const overlay = document.getElementById('overlay');
+      const unsupported = document.getElementById('unsupported');
+
+      const renderer = new THREE.WebGLRenderer({ antialias:true, alpha:true });
+      renderer.setPixelRatio(window.devicePixelRatio);
+      renderer.setSize(window.innerWidth, window.innerHeight);
+      renderer.xr.enabled = true;
+      document.body.appendChild(renderer.domElement);
+
+      const scene = new THREE.Scene();
+      const camera = new THREE.PerspectiveCamera(70, window.innerWidth / window.innerHeight, 0.01, 20);
+
+      const hemi = new THREE.HemisphereLight(0xffffff, 0x444444, 1);
+      scene.add(hemi);
+      const dir = new THREE.DirectionalLight(0xffffff, 0.9);
+      dir.position.set(1,2,1);
+      scene.add(dir);
+
+      function makeAirplane() {
+        const group = new THREE.Group();
+        const fuselage = new THREE.Mesh(new THREE.BoxGeometry(0.3,0.3,2.6), new THREE.MeshStandardMaterial({color:0xcccccc}));
+        group.add(fuselage);
+        const wingMat = new THREE.MeshStandardMaterial({color:0x2aa9ff});
+        const wings1 = new THREE.Mesh(new THREE.BoxGeometry(1.6,0.02,0.05), wingMat);
+        wings1.position.set(0,0,0.1);
+        group.add(wings1);
+        const wings2 = new THREE.Mesh(new THREE.BoxGeometry(1.6,0.02,0.05), wingMat);
+        wings2.position.set(0,0,-0.1);
+        group.add(wings2);
+        const tail = new THREE.Mesh(new THREE.BoxGeometry(0.08,0.4,0.05), new THREE.MeshStandardMaterial({color:0x59d97a}));
+        tail.position.set(0,-0.15,-1.1);
+        tail.rotation.z = -Math.PI/9;
+        group.add(tail);
+        const engineMat = new THREE.MeshStandardMaterial({color:0x888888});
+        const makeEngine = (x,z)=>{ const c = new THREE.Mesh(new THREE.CylinderGeometry(0.06,0.06,0.25,24), engineMat); c.rotation.x = Math.PI/2; c.position.set(x,-0.07,z); group.add(c) };
+        makeEngine(-0.45,0.6); makeEngine(0.45,0.6); makeEngine(-0.45,-0.6); makeEngine(0.45,-0.6);
+        group.scale.set(0.8,0.8,0.8);
+        return group;
+      }
+
+      const reticle = new THREE.Mesh(new THREE.RingGeometry(0.12,0.14,32), new THREE.MeshBasicMaterial({ color:0x00ffff }));
+      reticle.rotation.x = -Math.PI/2;
+      reticle.matrixAutoUpdate = false;
+      reticle.visible = false;
+      scene.add(reticle);
+
+      const button = ARButton.createButton(renderer, { requiredFeatures:['hit-test'] });
+      button.className = 'btn';
+      button.textContent = 'Start AR';
+      document.body.appendChild(button);
+
+      window.addEventListener('resize', () => {
+        renderer.setSize(window.innerWidth, window.innerHeight);
+        camera.aspect = window.innerWidth / window.innerHeight;
+        camera.updateProjectionMatrix();
+      });
+
+      let hitTestSource = null;
+      let hitTestSourceRequested = false;
+
+      const controller = renderer.xr.getController(0);
+      controller.addEventListener('select', () => {
+        if (!reticle.visible) return;
+        const obj = makeAirplane();
+        obj.position.setFromMatrixPosition(reticle.matrix);
+        obj.rotation.y = Math.random()*Math.PI*2;
+        scene.add(obj);
+      });
+      scene.add(controller);
+
+      renderer.setAnimationLoop((t, frame) => {
+        if (frame) {
+          const session = renderer.xr.getSession();
+          const refSpace = renderer.xr.getReferenceSpace();
+          if (!hitTestSourceRequested) {
+            session.requestReferenceSpace('viewer').then(viewerSpace => {
+              session.requestHitTestSource({ space: viewerSpace }).then(source => {
+                hitTestSource = source;
+              });
+            });
+            session.addEventListener('end', () => {
+              hitTestSourceRequested = false;
+              hitTestSource = null;
+              reticle.visible = false;
+            });
+            hitTestSourceRequested = true;
+          }
+          if (hitTestSource) {
+            const results = frame.getHitTestResults(hitTestSource);
+            if (results.length) {
+              const pose = results[0].getPose(refSpace);
+              reticle.visible = true;
+              reticle.matrix.fromArray(pose.transform.matrix);
+            } else {
+              reticle.visible = false;
+            }
+          }
+        }
+        renderer.render(scene, camera);
+      });
+
+      const supported = navigator.xr && navigator.xr.isSessionSupported ? await navigator.xr.isSessionSupported('immersive-ar').catch(()=>false) : false;
+      const secure = location.protocol === 'https:' || location.hostname === 'localhost';
+      if (!supported || !secure) {
+        document.getElementById('unsupported').classList.add('active');
+      }
+    </script>
+  </head>
+  <body>
+    <div id="app">
+      <div id="overlay" class="overlay">
+        <div class="title">Markerless AR Aircraft</div>
+        <div class="hint">Tap para i-place ang airplane sa surface</div>
+      </div>
+      <div id="unsupported" class="unsupported">
+        <div>
+          <h2>Markerless AR hindi available</h2>
+          <p>Subukan sa Chrome Android na may WebXR AR support at HTTPS.</p>
+        </div>
+      </div>
+    </div>
+  </body>
+</html>
