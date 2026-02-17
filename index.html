@@ -136,6 +136,7 @@
         <button class="btn" id="openMarker">Buksan ang HIRO marker</button>
         <button class="btn" id="startCam">Start Camera</button>
       </div>
+      <div id="debug" style="position:fixed;left:10px;bottom:60px;font-size:12px;background:rgba(0,0,0,.4);padding:8px 10px;border-radius:8px;max-width:80vw;z-index:10"></div>
     </div>
 
     <script>
@@ -144,6 +145,12 @@
       const markerBtn = document.getElementById('openMarker');
       const unsupported = document.getElementById('unsupported');
       const startCamBtn = document.getElementById('startCam');
+      const debugEl = document.getElementById('debug');
+
+      function log(msg) {
+        console.log('[AR DEBUG]', msg);
+        debugEl.textContent = String(msg);
+      }
 
       function isMobile() {
         return /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
@@ -152,7 +159,12 @@
       (async () => {
         const supported = !!(navigator.mediaDevices && navigator.mediaDevices.getUserMedia);
         const secure = location.protocol === 'https:' || location.hostname === 'localhost';
-        if (!supported || !secure) unsupported.classList.add('active');
+        if (!supported || !secure) {
+          unsupported.classList.add('active');
+          log(!supported ? 'Walang getUserMedia' : 'Kailangan HTTPS o localhost');
+        } else {
+          log('Handa ang camera; hintayin ang AR init');
+        }
       })();
 
       toggleBtn.addEventListener('click', () => {
@@ -163,12 +175,54 @@
       });
       startCamBtn.addEventListener('click', async () => {
         try {
-          const stream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: { ideal: 'environment' } } });
-          stream.getTracks().forEach(t => t.stop());
+          const stream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: { ideal: 'environment' } }, audio: false });
+          // Preview para siguradong tumatakbo ang camera; i-attach sa hidden video
+          let vid = document.getElementById('previewVideo');
+          if (!vid) {
+            vid = document.createElement('video');
+            vid.id = 'previewVideo';
+            vid.style.position = 'fixed';
+            vid.style.right = '10px';
+            vid.style.bottom = '110px';
+            vid.style.width = '120px';
+            vid.style.height = '80px';
+            vid.style.opacity = '0.6';
+            vid.style.zIndex = '10';
+            vid.muted = true;
+            vid.autoplay = true;
+            vid.playsInline = true;
+            document.body.appendChild(vid);
+          }
+          vid.srcObject = stream;
+          await vid.play();
           unsupported.classList.remove('active');
+          log('Camera preview tumatakbo. Dapat mag-init ang AR in a moment.');
+          // Stop preview after a short while to free camera for AR.js if needed
+          setTimeout(() => { stream.getTracks().forEach(t => t.stop()); vid.remove(); }, 2500);
         } catch (e) {
           unsupported.classList.add('active');
+          log('Camera error: ' + (e && e.message ? e.message : e));
         }
+      });
+
+      // Set playsinline/muted attributes sa anumang video na i-insert ng AR.js
+      const mo = new MutationObserver(() => {
+        const vids = document.querySelectorAll('video');
+        vids.forEach(v => {
+          v.setAttribute('playsinline', 'true');
+          v.setAttribute('webkit-playsinline', 'true');
+          v.muted = true;
+          v.autoplay = true;
+        });
+      });
+      mo.observe(document.body, { childList: true, subtree: true });
+
+      // Listen to AR.js camera events (if available)
+      const sceneEl = document.getElementById('scene');
+      sceneEl.addEventListener('camera-init', () => log('AR camera initialized'));
+      sceneEl.addEventListener('camera-error', (e) => {
+        unsupported.classList.add('active');
+        log('AR camera error: ' + JSON.stringify(e && e.detail ? e.detail : e));
       });
     </script>
   </body>
