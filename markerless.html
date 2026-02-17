@@ -170,7 +170,7 @@
         const url = `https://arvr.google.com/scene-viewer/1.0?file=${glb}&mode=ar_preferred&title=Aircraft`;
         window.location.href = url;
       });
-      startCamBtn.addEventListener('click', async () => {
+      window.__startCam = async () => {
         try {
           const stream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: { ideal: 'environment' } }, audio: false });
           let vid = document.getElementById('previewVideo');
@@ -206,7 +206,8 @@
           unsupported.classList.add('active');
           unsupportedMsg.innerHTML = '<h2>Camera blocked</h2><p>Allow camera permissions in site settings, then try again.</p>';
         }
-      });
+      };
+      startCamBtn.addEventListener('click', () => window.__startCam());
       renderer.xr.addEventListener('sessionstart', () => {
         const v = document.getElementById('previewVideo');
         if (v) v.remove();
@@ -230,7 +231,7 @@
           <p>Use Chrome on Android with HTTPS, then press Start AR.</p>
         </div>
       </div>
-      <button class="btn" id="startCam" style="bottom:60px">Start Camera</button>
+      <button class="btn" id="startCam" style="bottom:60px" onclick="window.__startCam && window.__startCam()">Start Camera</button>
     </div>
   </body>
 </html>
