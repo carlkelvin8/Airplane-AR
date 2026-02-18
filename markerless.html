@@ -377,5 +377,46 @@
       </div>
       <button class="btn" id="startCam" style="bottom:60px" onclick="window.__startCam && window.__startCam()">Start Camera</button>
     </div>
+    <script>
+      (function(){
+        function startCameraFallback(){
+          try {
+            if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
+              alert('Camera not available in this browser');
+              return;
+            }
+            navigator.mediaDevices.getUserMedia({ video: { facingMode: { ideal: 'environment' } }, audio: false })
+              .then(stream => {
+                var vid = document.getElementById('previewVideo');
+                if (!vid) {
+                  vid = document.createElement('video');
+                  vid.id = 'previewVideo';
+                  vid.style.position = 'fixed';
+                  vid.style.inset = '0';
+                  vid.style.width = '100vw';
+                  vid.style.height = '100vh';
+                  vid.style.objectFit = 'cover';
+                  vid.style.zIndex = '1';
+                  vid.style.pointerEvents = 'none';
+                  vid.muted = true;
+                  vid.autoplay = true;
+                  vid.playsInline = true;
+                  document.body.appendChild(vid);
+                }
+                vid.srcObject = stream;
+                vid.play().catch(function(){});
+              })
+              .catch(function(){
+                alert('Please allow camera permissions in site settings');
+              });
+          } catch(e) {
+            alert('Camera error: ' + e);
+          }
+        }
+        window.__startCam = window.__startCam || startCameraFallback;
+        var btn = document.getElementById('startCam');
+        if (btn) btn.addEventListener('click', startCameraFallback);
+      })();
+    </script>
   </body>
 </html>
