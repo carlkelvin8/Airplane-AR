@@ -77,7 +77,7 @@
         console.log('[WebXR] Start AR clicked');
         try {
           // Prime permission so AR session can start smoothly
-          const s = await navigator.mediaDevices.getUserMedia({ video: { facingMode: { ideal: 'environment' } }, audio: false });
+          const s = await navigator.mediaDevices.getUserMedia({ video: { facingMode: 'environment' }, audio: false });
           s.getTracks().forEach(t => t.stop());
         } catch (_) {}
       });
@@ -155,7 +155,7 @@
           // Ensure camera preview
           try {
             if (!window._previewStream) {
-              const stream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: { ideal: 'environment' } }, audio: false });
+              const stream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: 'environment' }, audio: false });
               let vid = document.getElementById('previewVideo');
               if (!vid) {
                 vid = document.createElement('video');
@@ -210,7 +210,7 @@
         } else {
           if (!window._previewStream) {
             // if preview is not running, try to start it quietly
-            navigator.mediaDevices.getUserMedia({ video: { facingMode: { ideal: 'environment' } }, audio: false })
+            navigator.mediaDevices.getUserMedia({ video: { facingMode: 'environment' }, audio: false })
               .then(stream => {
                 window._previewStream = stream;
                 let vid = document.getElementById('previewVideo');
@@ -327,6 +327,7 @@
       if (window.__startRequested) {
         setTimeout(() => { try { window.__autoPlaceAfterCamera(); } catch(_){} }, 100);
       }
+      window.__moduleReady = true;
       resetBtn.addEventListener('click', () => {
         placed.forEach(o => scene.remove(o));
         placed.length = 0;
@@ -395,6 +396,9 @@
       </div>
       <button class="btn" id="startCam" style="bottom:60px" onclick="window.__startCam && window.__startCam()">Start Camera</button>
     </div>
+    <script src="https://cdn.jsdelivr.net/npm/three@0.155.0/build/three.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/three@0.155.0/examples/js/loaders/GLTFLoader.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/three@0.155.0/examples/js/controls/DeviceOrientationControls.js"></script>
     <script>
       (function(){
         function startCameraFallback(){
@@ -447,6 +451,155 @@
             }
           }, 200);
         });
+      })();
+    </script>
+    <script>
+      (function(){
+        if (window.__moduleReady) return;
+        if (!window.THREE) return;
+        var renderer = new THREE.WebGLRenderer({ antialias:true, alpha:true });
+        renderer.setPixelRatio(window.devicePixelRatio);
+        renderer.setSize(window.innerWidth, window.innerHeight);
+        renderer.setClearColor(0x000000, 0);
+        document.body.appendChild(renderer.domElement);
+        var scene = new THREE.Scene();
+        var camera = new THREE.PerspectiveCamera(70, window.innerWidth / window.innerHeight, 0.01, 20);
+        var hemi = new THREE.HemisphereLight(0xffffff, 0x444444, 1);
+        scene.add(hemi);
+        var dir = new THREE.DirectionalLight(0xffffff, 0.9);
+        dir.position.set(1,2,1);
+        scene.add(dir);
+        function makeAirplane() {
+          var group = new THREE.Group();
+          var fuselage = new THREE.Mesh(new THREE.BoxGeometry(0.3,0.3,2.6), new THREE.MeshStandardMaterial({color:0xcccccc}));
+          group.add(fuselage);
+          var wingMat = new THREE.MeshStandardMaterial({color:0x2aa9ff});
+          var wings1 = new THREE.Mesh(new THREE.BoxGeometry(1.6,0.02,0.05), wingMat);
+          wings1.position.set(0,0,0.1);
+          group.add(wings1);
+          var wings2 = new THREE.Mesh(new THREE.BoxGeometry(1.6,0.02,0.05), wingMat);
+          wings2.position.set(0,0,-0.1);
+          group.add(wings2);
+          var tail = new THREE.Mesh(new THREE.BoxGeometry(0.08,0.4,0.05), new THREE.MeshStandardMaterial({color:0x59d97a}));
+          tail.position.set(0,-0.15,-1.1);
+          tail.rotation.z = -Math.PI/9;
+          group.add(tail);
+          var engineMat = new THREE.MeshStandardMaterial({color:0x888888});
+          function makeEngine(x,z){ var c = new THREE.Mesh(new THREE.CylinderGeometry(0.06,0.06,0.25,24), engineMat); c.rotation.x = Math.PI/2; c.position.set(x,-0.07,z); group.add(c) }
+          makeEngine(-0.45,0.6); makeEngine(0.45,0.6); makeEngine(-0.45,-0.6); makeEngine(0.45,-0.6);
+          group.scale.set(0.8,0.8,0.8);
+          return group;
+        }
+        var placed = [];
+        var placeCount = 0;
+        var lastPlacedSimple = null;
+        var nonXrControls = null;
+        function createButton(id, text, bottom) {
+          var b = document.getElementById(id);
+          if (b) return b;
+          b = document.createElement('button');
+          b.id = id;
+          b.className = 'btn';
+          b.style.bottom = bottom;
+          b.textContent = text;
+          document.body.appendChild(b);
+          return b;
+        }
+        var placeBtn = createButton('placePlane', 'Place Aircraft', '108px');
+        var load3dBtn = createButton('load3d', 'Load 3D Aircraft', '252px');
+        var resetBtn = createButton('resetScene', 'Reset', '204px');
+        function place() {
+          var obj = makeAirplane();
+          if (!nonXrControls && THREE.DeviceOrientationControls) {
+            nonXrControls = new THREE.DeviceOrientationControls(camera);
+            nonXrControls.connect();
+          }
+          renderer.domElement.style.position = 'fixed';
+          renderer.domElement.style.inset = '0';
+          renderer.domElement.style.zIndex = '2';
+          var dist = 1.2 + 0.5 * (placeCount % 3);
+          obj.position.set(0, 0, -dist);
+          obj.rotation.y = Math.random() * Math.PI * 2;
+          scene.add(obj);
+          placed.push(obj);
+          lastPlacedSimple = obj;
+          placeCount++;
+        }
+        placeBtn.addEventListener('click', place);
+        function makeLabel(text, color) {
+          var canvas = document.createElement('canvas');
+          canvas.width = 256; canvas.height = 64;
+          var ctx = canvas.getContext('2d');
+          ctx.fillStyle = 'rgba(0,0,0,0.6)'; ctx.fillRect(0,0,256,64);
+          ctx.fillStyle = color || '#ffffff';
+          ctx.font = '28px sans-serif';
+          ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+          ctx.fillText(text, 128, 32);
+          var tex = new THREE.CanvasTexture(canvas);
+          var mat = new THREE.SpriteMaterial({ map: tex, transparent: true });
+          var spr = new THREE.Sprite(mat);
+          spr.scale.set(0.8, 0.2, 1);
+          return spr;
+        }
+        function load3d() {
+          try {
+            var loader = new THREE.GLTFLoader();
+            var glbUrl = 'https://raw.githubusercontent.com/KhronosGroup/glTF-Sample-Models/master/2.0/CesiumAir/glTF-Binary/CesiumAir.glb';
+            loader.load(glbUrl, function(gltf){
+              var model = gltf.scene;
+              model.traverse(function(o){ if (o.isMesh) { o.castShadow = true; o.receiveShadow = true; } });
+              model.scale.set(0.6,0.6,0.6);
+              if (lastPlacedSimple) {
+                model.position.copy(lastPlacedSimple.position);
+                model.rotation.copy(lastPlacedSimple.rotation);
+                scene.remove(lastPlacedSimple);
+                placed.splice(placed.indexOf(lastPlacedSimple), 1);
+                lastPlacedSimple = null;
+              } else {
+                renderer.domElement.style.position = 'fixed';
+                renderer.domElement.style.inset = '0';
+                renderer.domElement.style.zIndex = '2';
+                if (!nonXrControls && THREE.DeviceOrientationControls) { nonXrControls = new THREE.DeviceOrientationControls(camera); nonXrControls.connect(); }
+                model.position.set(0,0,-1.6);
+              }
+              var box = new THREE.Box3().setFromObject(model);
+              var size = new THREE.Vector3(); box.getSize(size);
+              var center = new THREE.Vector3(); box.getCenter(center);
+              [
+                { t:'Ailerons', c:'#ff6b6b', o:new THREE.Vector3(size.x*0.2, size.y*0.15, size.z*0.45) },
+                { t:'Flaps', c:'#ffd166', o:new THREE.Vector3(-size.x*0.05, size.y*0.1, size.z*0.30) },
+                { t:'Spoilers', c:'#ffa500', o:new THREE.Vector3(0, size.y*0.2, 0) },
+                { t:'Slats', c:'#d7dce3', o:new THREE.Vector3(size.x*0.25, size.y*0.05, size.z*0.15) },
+                { t:'Elevators', c:'#00a3ff', o:new THREE.Vector3(-size.x*0.35, size.y*0.15, -size.z*0.35) },
+                { t:'Rudder', c:'#59d97a', o:new THREE.Vector3(-size.x*0.38, size.y*0.35, -size.z*0.38) },
+              ].forEach(function(x){
+                var spr = makeLabel(x.t, x.c);
+                spr.position.copy(center.clone().add(x.o));
+                model.add(spr);
+              });
+              scene.add(model);
+              placed.push(model);
+            }, function(){}, function(){ place(); });
+          } catch(e) { place(); }
+        }
+        load3dBtn.addEventListener('click', load3d);
+        resetBtn.addEventListener('click', function(){
+          placed.forEach(function(o){ scene.remove(o) });
+          placed.length = 0;
+          placeCount = 0;
+        });
+        window.addEventListener('resize', function(){
+          renderer.setSize(window.innerWidth, window.innerHeight);
+          camera.aspect = window.innerWidth / window.innerHeight;
+          camera.updateProjectionMatrix();
+        });
+        function loop(){
+          if (nonXrControls) nonXrControls.update();
+          renderer.render(scene, camera);
+          requestAnimationFrame(loop);
+        }
+        loop();
+        window.__autoPlaceAfterCamera = window.__autoPlaceAfterCamera || function(){ try{ place() }catch(e){} try{ load3d() }catch(e){} };
       })();
     </script>
   </body>
