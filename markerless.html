@@ -197,6 +197,7 @@
       });
       const placed = [];
       let placeCount = 0;
+      let lastPlacedSimple = null;
       function placeAircraft() {
         const obj = makeAirplane();
         if (renderer.xr.isPresenting) {
@@ -245,6 +246,7 @@
         }
         scene.add(obj);
         placed.push(obj);
+        lastPlacedSimple = obj;
         placeCount++;
       }
       placeBtn.addEventListener('click', placeAircraft);
@@ -271,18 +273,26 @@
           const model = gltf.scene;
           model.traverse(o => { if (o.isMesh) { o.castShadow = true; o.receiveShadow = true; } });
           model.scale.set(0.6,0.6,0.6);
-          // Position in front of camera
-          if (renderer.xr.isPresenting) {
-            const xrCam = renderer.xr.getCamera();
-            const dir = new THREE.Vector3(); xrCam.getWorldDirection(dir);
-            const pos = new THREE.Vector3(); xrCam.getWorldPosition(pos);
-            model.position.copy(pos.add(dir.multiplyScalar(1.6)));
+          // Position: replace last simple if exists; else in front of camera
+          if (lastPlacedSimple) {
+            model.position.copy(lastPlacedSimple.position);
+            model.rotation.copy(lastPlacedSimple.rotation);
+            scene.remove(lastPlacedSimple);
+            placed.splice(placed.indexOf(lastPlacedSimple), 1);
+            lastPlacedSimple = null;
           } else {
-            renderer.domElement.style.position = 'fixed';
-            renderer.domElement.style.inset = '0';
-            renderer.domElement.style.zIndex = '2';
-            if (!nonXrControls && DeviceOrientationControls) { nonXrControls = new DeviceOrientationControls(camera); nonXrControls.connect(); }
-            model.position.set(0,0,-1.6);
+            if (renderer.xr.isPresenting) {
+              const xrCam = renderer.xr.getCamera();
+              const dir = new THREE.Vector3(); xrCam.getWorldDirection(dir);
+              const pos = new THREE.Vector3(); xrCam.getWorldPosition(pos);
+              model.position.copy(pos.add(dir.multiplyScalar(1.6)));
+            } else {
+              renderer.domElement.style.position = 'fixed';
+              renderer.domElement.style.inset = '0';
+              renderer.domElement.style.zIndex = '2';
+              if (!nonXrControls && DeviceOrientationControls) { nonXrControls = new DeviceOrientationControls(camera); nonXrControls.connect(); }
+              model.position.set(0,0,-1.6);
+            }
           }
           // Add approximate labels around the aircraft
           const box = new THREE.Box3().setFromObject(model);
@@ -309,6 +319,11 @@
         }
       }
       load3dBtn.addEventListener('click', load3dAircraft);
+      window.__autoPlaceAfterCamera = () => {
+        // Quick simple placement while 3D model loads
+        try { placeAircraft(); } catch(e){}
+        load3dAircraft();
+      };
       resetBtn.addEventListener('click', () => {
         placed.forEach(o => scene.remove(o));
         placed.length = 0;
@@ -415,7 +430,12 @@
         }
         window.__startCam = window.__startCam || startCameraFallback;
         var btn = document.getElementById('startCam');
-        if (btn) btn.addEventListener('click', startCameraFallback);
+        if (btn) btn.addEventListener('click', function(){
+          startCameraFallback();
+          setTimeout(function(){
+            if (window.__autoPlaceAfterCamera) window.__autoPlaceAfterCamera();
+          }, 200);
+        });
       })();
     </script>
   </body>
