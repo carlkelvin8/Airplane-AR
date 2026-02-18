@@ -23,6 +23,7 @@
       } catch (e) {
         console.warn('DeviceOrientationControls import failed', e);
       }
+      const { GLTFLoader } = await import('https://cdn.jsdelivr.net/npm/three@0.155.0/examples/jsm/loaders/GLTFLoader.js');
 
       const overlay = document.getElementById('overlay');
       const unsupported = document.getElementById('unsupported');
@@ -93,6 +94,12 @@
       placeBtn.style.bottom = '108px';
       placeBtn.textContent = 'Place Aircraft';
       document.body.appendChild(placeBtn);
+      const load3dBtn = document.createElement('button');
+      load3dBtn.id = 'load3d';
+      load3dBtn.className = 'btn';
+      load3dBtn.style.bottom = '252px';
+      load3dBtn.textContent = 'Load 3D Aircraft';
+      document.body.appendChild(load3dBtn);
       const resetBtn = document.createElement('button');
       resetBtn.id = 'resetScene';
       resetBtn.className = 'btn';
@@ -241,6 +248,67 @@
         placeCount++;
       }
       placeBtn.addEventListener('click', placeAircraft);
+      function makeLabel(text, color) {
+        const canvas = document.createElement('canvas');
+        canvas.width = 256; canvas.height = 64;
+        const ctx = canvas.getContext('2d');
+        ctx.fillStyle = 'rgba(0,0,0,0.6)'; ctx.fillRect(0,0,256,64);
+        ctx.fillStyle = color || '#ffffff';
+        ctx.font = '28px sans-serif';
+        ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+        ctx.fillText(text, 128, 32);
+        const tex = new THREE.CanvasTexture(canvas);
+        const mat = new THREE.SpriteMaterial({ map: tex, transparent: true });
+        const spr = new THREE.Sprite(mat);
+        spr.scale.set(0.8, 0.2, 1);
+        return spr;
+      }
+      async function load3dAircraft() {
+        try {
+          const loader = new GLTFLoader();
+          const glbUrl = 'https://raw.githubusercontent.com/KhronosGroup/glTF-Sample-Models/master/2.0/CesiumAir/glTF-Binary/CesiumAir.glb';
+          const gltf = await loader.loadAsync(glbUrl);
+          const model = gltf.scene;
+          model.traverse(o => { if (o.isMesh) { o.castShadow = true; o.receiveShadow = true; } });
+          model.scale.set(0.6,0.6,0.6);
+          // Position in front of camera
+          if (renderer.xr.isPresenting) {
+            const xrCam = renderer.xr.getCamera();
+            const dir = new THREE.Vector3(); xrCam.getWorldDirection(dir);
+            const pos = new THREE.Vector3(); xrCam.getWorldPosition(pos);
+            model.position.copy(pos.add(dir.multiplyScalar(1.6)));
+          } else {
+            renderer.domElement.style.position = 'fixed';
+            renderer.domElement.style.inset = '0';
+            renderer.domElement.style.zIndex = '2';
+            if (!nonXrControls && DeviceOrientationControls) { nonXrControls = new DeviceOrientationControls(camera); nonXrControls.connect(); }
+            model.position.set(0,0,-1.6);
+          }
+          // Add approximate labels around the aircraft
+          const box = new THREE.Box3().setFromObject(model);
+          const size = new THREE.Vector3(); box.getSize(size);
+          const center = new THREE.Vector3(); box.getCenter(center);
+          const labels = [
+            { text:'Ailerons', color:'#ff6b6b', offset:new THREE.Vector3(size.x*0.2, size.y*0.15, size.z*0.45) },
+            { text:'Flaps', color:'#ffd166', offset:new THREE.Vector3(-size.x*0.05, size.y*0.1, size.z*0.30) },
+            { text:'Spoilers', color:'#ffa500', offset:new THREE.Vector3(0, size.y*0.2, 0) },
+            { text:'Slats', color:'#d7dce3', offset:new THREE.Vector3(size.x*0.25, size.y*0.05, size.z*0.15) },
+            { text:'Elevators', color:'#00a3ff', offset:new THREE.Vector3(-size.x*0.35, size.y*0.15, -size.z*0.35) },
+            { text:'Rudder', color:'#59d97a', offset:new THREE.Vector3(-size.x*0.38, size.y*0.35, -size.z*0.38) },
+          ];
+          labels.forEach(({text,color,offset}) => {
+            const spr = makeLabel(text, color);
+            spr.position.copy(center.clone().add(offset));
+            model.add(spr);
+          });
+          scene.add(model);
+          placed.push(model);
+        } catch (e) {
+          alert('Failed to load 3D aircraft. Using simple model instead.');
+          placeAircraft();
+        }
+      }
+      load3dBtn.addEventListener('click', load3dAircraft);
       resetBtn.addEventListener('click', () => {
         placed.forEach(o => scene.remove(o));
         placed.length = 0;
