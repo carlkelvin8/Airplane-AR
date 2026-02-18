@@ -324,6 +324,9 @@
         try { placeAircraft(); } catch(e){}
         load3dAircraft();
       };
+      if (window.__startRequested) {
+        setTimeout(() => { try { window.__autoPlaceAfterCamera(); } catch(_){} }, 100);
+      }
       resetBtn.addEventListener('click', () => {
         placed.forEach(o => scene.remove(o));
         placed.length = 0;
@@ -400,7 +403,7 @@
               alert('Camera not available in this browser');
               return;
             }
-            navigator.mediaDevices.getUserMedia({ video: { facingMode: { ideal: 'environment' } }, audio: false })
+            navigator.mediaDevices.getUserMedia({ video: { facingMode: 'environment' }, audio: false })
               .then(stream => {
                 var vid = document.getElementById('previewVideo');
                 if (!vid) {
@@ -431,9 +434,17 @@
         window.__startCam = window.__startCam || startCameraFallback;
         var btn = document.getElementById('startCam');
         if (btn) btn.addEventListener('click', function(){
+          window.__startRequested = true;
           startCameraFallback();
           setTimeout(function(){
             if (window.__autoPlaceAfterCamera) window.__autoPlaceAfterCamera();
+            else {
+              var tries = 0;
+              var iv = setInterval(function(){
+                if (window.__autoPlaceAfterCamera) { window.__autoPlaceAfterCamera(); clearInterval(iv); }
+                if (++tries > 20) clearInterval(iv);
+              }, 200);
+            }
           }, 200);
         });
       })();
