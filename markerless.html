@@ -165,6 +165,7 @@
         } catch (_) {}
       });
       const startCamBtn = document.getElementById('startCam');
+      let __startHandler = null;
       const fallbackBtn = document.createElement('button');
       fallbackBtn.id = 'fallbackAR';
       fallbackBtn.className = 'btn';
@@ -467,6 +468,7 @@
           await vid.play();
           window._previewStream = stream;
           startCamBtn.textContent = 'Stop Camera';
+          try { startCamBtn.removeEventListener('click', __startHandler); } catch(_) {}
           startCamBtn.onclick = () => {
             if (window._previewStream) {
               window._previewStream.getTracks().forEach(t => t.stop());
@@ -475,13 +477,16 @@
             const v = document.getElementById('previewVideo');
             if (v) v.remove();
             startCamBtn.textContent = 'Start Camera';
+            startCamBtn.onclick = null;
+            try { startCamBtn.addEventListener('click', __startHandler); } catch(_) {}
           };
         } catch (e) {
           unsupported.classList.add('active');
           unsupportedMsg.innerHTML = '<h2>Camera blocked</h2><p>Allow camera permissions in site settings, then try again.</p>';
         }
       };
-      startCamBtn.addEventListener('click', () => window.__startCam());
+      __startHandler = () => window.__startCam();
+      startCamBtn.addEventListener('click', __startHandler);
       renderer.xr.addEventListener('sessionstart', async () => {
         const v = document.getElementById('previewVideo');
         if (v) v.remove();
@@ -548,7 +553,7 @@
           <p>Use Chrome on Android with HTTPS, then press Start AR.</p>
         </div>
       </div>
-      <button class="btn" id="startCam" style="bottom:60px" onclick="window.__startCam && window.__startCam()">Start Camera</button>
+      <button class="btn" id="startCam" style="bottom:60px">Start Camera</button>
     </div>
     <script src="https://cdn.jsdelivr.net/npm/three@0.155.0/build/three.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/three@0.155.0/examples/js/loaders/GLTFLoader.js"></script>
