@@ -28,10 +28,16 @@
       import { OBJLoader } from 'https://cdn.jsdelivr.net/npm/three@0.155.0/examples/jsm/loaders/OBJLoader.js';
       window.THREE = THREE;
       let DeviceOrientationControls = null;
+      let OrbitControls = null;
       try {
         ({ DeviceOrientationControls } = await import('https://unpkg.com/three@0.155.0/examples/jsm/controls/DeviceOrientationControls.js'));
       } catch (e) {
         console.warn('DeviceOrientationControls import failed', e);
+      }
+      try {
+        ({ OrbitControls } = await import('https://cdn.jsdelivr.net/npm/three@0.155.0/examples/jsm/controls/OrbitControls.js'));
+      } catch (e) {
+        console.warn('OrbitControls import failed', e);
       }
       const { GLTFLoader } = await import('https://cdn.jsdelivr.net/npm/three@0.155.0/examples/jsm/loaders/GLTFLoader.js');
 
@@ -578,9 +584,29 @@
             }
           } catch (e) {}
           // Setup device orientation controls (smoothed via virtualCam)
+          async function requestSensorPermission() {
+            try {
+              if (typeof DeviceOrientationEvent !== 'undefined' && typeof DeviceOrientationEvent.requestPermission === 'function') {
+                await DeviceOrientationEvent.requestPermission();
+              }
+            } catch (_) {}
+            try {
+              if (typeof DeviceMotionEvent !== 'undefined' && typeof DeviceMotionEvent.requestPermission === 'function') {
+                await DeviceMotionEvent.requestPermission();
+              }
+            } catch (_) {}
+          }
+          await requestSensorPermission();
           if (DeviceOrientationControls) {
             nonXrControls = new DeviceOrientationControls(virtualCam);
             nonXrControls.connect();
+          }
+          if (!orbitControls && OrbitControls) {
+            orbitControls = new OrbitControls(camera, renderer.domElement);
+            orbitControls.enableDamping = true;
+            orbitControls.dampingFactor = 0.1;
+            orbitControls.enablePan = true;
+            orbitControls.enableZoom = true;
           }
           // Spawn airplane in front of camera
           const obj = makeAirplane();
