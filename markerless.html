@@ -51,6 +51,10 @@
 
       const scene = new THREE.Scene();
       const camera = new THREE.PerspectiveCamera(70, window.innerWidth / window.innerHeight, 0.01, 1000);
+      const virtualCam = new THREE.Object3D();
+      scene.add(virtualCam);
+      const cameraTargetPos = new THREE.Vector3(0, 0, 0);
+      let followDevice = true;
 
       const hemi = new THREE.HemisphereLight(0xffffff, 0x444444, 1);
       scene.add(hemi);
@@ -512,6 +516,10 @@
           renderer.render(scene, camera);
         } else {
           if (nonXrControls) nonXrControls.update();
+          if (followDevice) {
+            camera.quaternion.slerp(virtualCam.quaternion, 0.15);
+            camera.position.lerp(cameraTargetPos, 0.1);
+          }
           renderer.render(scene, camera);
         }
       });
@@ -559,9 +567,11 @@
               window._previewStream = stream;
             }
           } catch (e) {}
-          // Setup device orientation controls
-          nonXrControls = new DeviceOrientationControls(camera);
-          nonXrControls.connect();
+          // Setup device orientation controls (smoothed via virtualCam)
+          if (DeviceOrientationControls) {
+            nonXrControls = new DeviceOrientationControls(virtualCam);
+            nonXrControls.connect();
+          }
           // Spawn airplane in front of camera
           const obj = makeAirplane();
           obj.position.set(0, 0, -WORLD_SPAWN_DISTANCE);
