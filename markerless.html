@@ -199,6 +199,86 @@
       resetBtn.style.bottom = '204px';
       resetBtn.textContent = 'Reset';
       document.body.appendChild(resetBtn);
+      const zoomInBtn = document.createElement('button');
+      zoomInBtn.className = 'btn';
+      zoomInBtn.style.bottom = '348px';
+      zoomInBtn.textContent = 'Zoom In';
+      document.body.appendChild(zoomInBtn);
+      const zoomOutBtn = document.createElement('button');
+      zoomOutBtn.className = 'btn';
+      zoomOutBtn.style.bottom = '300px';
+      zoomOutBtn.textContent = 'Zoom Out';
+      document.body.appendChild(zoomOutBtn);
+      let anchorBase = null;
+      function adjustScale(factor) {
+        const o = activeObject;
+        if (!o) return;
+        const s = Math.max(0.5, Math.min(4, o.scale.x * factor));
+        o.scale.set(s, s, s);
+      }
+      zoomInBtn.addEventListener('click', () => adjustScale(1.1));
+      zoomOutBtn.addEventListener('click', () => adjustScale(0.9));
+      const joy = document.createElement('div');
+      joy.style.position = 'fixed';
+      joy.style.left = '16px';
+      joy.style.bottom = '16px';
+      joy.style.width = '120px';
+      joy.style.height = '120px';
+      joy.style.borderRadius = '60px';
+      joy.style.background = 'rgba(255,255,255,0.08)';
+      joy.style.border = '1px solid rgba(255,255,255,0.25)';
+      joy.style.zIndex = '2000';
+      joy.style.touchAction = 'none';
+      const knob = document.createElement('div');
+      knob.style.position = 'absolute';
+      knob.style.left = '50%';
+      knob.style.top = '50%';
+      knob.style.width = '48px';
+      knob.style.height = '48px';
+      knob.style.marginLeft = '-24px';
+      knob.style.marginTop = '-24px';
+      knob.style.borderRadius = '24px';
+      knob.style.background = 'rgba(255,255,255,0.2)';
+      knob.style.border = '1px solid rgba(255,255,255,0.35)';
+      joy.appendChild(knob);
+      document.body.appendChild(joy);
+      let dragging = false;
+      let center = { x: 60, y: 60 };
+      function applyControl(dx, dy) {
+        if (!activeObject) return;
+        activeObject.rotation.y += dx * 0.005;
+        const px = activeObject.position.x + dx * 0.01;
+        const pz = activeObject.position.z + -dy * 0.01;
+        if (!anchorBase) anchorBase = activeObject.position.clone();
+        const offX = px - anchorBase.x;
+        const offZ = pz - anchorBase.z;
+        const r = Math.sqrt(offX*offX + offZ*offZ);
+        const limit = 10;
+        if (r > limit) {
+          const k = limit / r;
+          activeObject.position.x = anchorBase.x + offX * k;
+          activeObject.position.z = anchorBase.z + offZ * k;
+        } else {
+          activeObject.position.x = px;
+          activeObject.position.z = pz;
+        }
+      }
+      joy.addEventListener('pointerdown', (e) => { dragging = true; joy.setPointerCapture(e.pointerId); });
+      joy.addEventListener('pointermove', (e) => {
+        if (!dragging) return;
+        const rect = joy.getBoundingClientRect();
+        const x = e.clientX - rect.left;
+        const y = e.clientY - rect.top;
+        const dx = x - center.x;
+        const dy = y - center.y;
+        const mag = Math.hypot(dx, dy);
+        const max = 40;
+        const nx = mag > max ? dx * (max / mag) : dx;
+        const ny = mag > max ? dy * (max / mag) : dy;
+        knob.style.transform = `translate(${nx}px, ${ny}px)`;
+        applyControl(nx, ny);
+      });
+      joy.addEventListener('pointerup', () => { dragging = false; knob.style.transform = 'translate(0,0)'; });
 
       window.addEventListener('resize', () => {
         renderer.setSize(window.innerWidth, window.innerHeight);
@@ -219,6 +299,7 @@
         }
         scene.add(obj);
         activeObject = obj;
+        anchorBase = obj.position.clone();
       });
       scene.add(controller);
 
@@ -357,6 +438,7 @@
         placed.push(obj);
         lastPlacedSimple = obj;
         activeObject = obj;
+        anchorBase = obj.position.clone();
         placeCount++;
       }
       placeBtn.addEventListener('click', placeAircraft);
@@ -456,6 +538,7 @@
           scene.add(root);
           placed.push(root);
           activeObject = root;
+          anchorBase = root.position.clone();
         } catch (e) {
           alert('Failed to load 3D aircraft. Using simple model instead.');
           placeAircraft();
@@ -752,6 +835,78 @@
         var placeBtn = createButton('placePlane', 'Place Aircraft', '108px');
         var load3dBtn = createButton('load3d', 'Load 3D Aircraft', '252px');
         var resetBtn = createButton('resetScene', 'Reset', '204px');
+        var zoomInBtn = createButton('zoomIn', 'Zoom In', '348px');
+        var zoomOutBtn = createButton('zoomOut', 'Zoom Out', '300px');
+        var anchorBase = null;
+        function adjustScale(f){ var o = window.__activeObject; if (!o) return; var s = Math.max(0.5, Math.min(4, o.scale.x * f)); o.scale.set(s,s,s) }
+        zoomInBtn.addEventListener('click', function(){ adjustScale(1.1) });
+        zoomOutBtn.addEventListener('click', function(){ adjustScale(0.9) });
+        var joy = document.getElementById('joy');
+        if (!joy) {
+          joy = document.createElement('div');
+          joy.id = 'joy';
+          joy.style.position = 'fixed';
+          joy.style.left = '16px';
+          joy.style.bottom = '16px';
+          joy.style.width = '120px';
+          joy.style.height = '120px';
+          joy.style.borderRadius = '60px';
+          joy.style.background = 'rgba(255,255,255,0.08)';
+          joy.style.border = '1px solid rgba(255,255,255,0.25)';
+          joy.style.zIndex = '2000';
+          joy.style.touchAction = 'none';
+          var knob = document.createElement('div');
+          knob.id = 'joyKnob';
+          knob.style.position = 'absolute';
+          knob.style.left = '50%';
+          knob.style.top = '50%';
+          knob.style.width = '48px';
+          knob.style.height = '48px';
+          knob.style.marginLeft = '-24px';
+          knob.style.marginTop = '-24px';
+          knob.style.borderRadius = '24px';
+          knob.style.background = 'rgba(255,255,255,0.2)';
+          knob.style.border = '1px solid rgba(255,255,255,0.35)';
+          joy.appendChild(knob);
+          document.body.appendChild(joy);
+          var dragging = false;
+          var center = { x:60, y:60 };
+          function applyControl(dx,dy){
+            var o = window.__activeObject; if (!o) return;
+            o.rotation.y += dx * 0.005;
+            var px = o.position.x + dx * 0.01;
+            var pz = o.position.z + -dy * 0.01;
+            if (!anchorBase) anchorBase = o.position.clone();
+            var offX = px - anchorBase.x;
+            var offZ = pz - anchorBase.z;
+            var r = Math.sqrt(offX*offX + offZ*offZ);
+            var limit = 10;
+            if (r > limit) {
+              var k = limit / r;
+              o.position.x = anchorBase.x + offX * k;
+              o.position.z = anchorBase.z + offZ * k;
+            } else {
+              o.position.x = px;
+              o.position.z = pz;
+            }
+          }
+          joy.addEventListener('pointerdown', function(e){ dragging = true; joy.setPointerCapture(e.pointerId) });
+          joy.addEventListener('pointermove', function(e){
+            if (!dragging) return;
+            var rect = joy.getBoundingClientRect();
+            var x = e.clientX - rect.left;
+            var y = e.clientY - rect.top;
+            var dx = x - center.x;
+            var dy = y - center.y;
+            var mag = Math.hypot(dx,dy);
+            var max = 40;
+            var nx = mag > max ? dx * (max / mag) : dx;
+            var ny = mag > max ? dy * (max / mag) : dy;
+            knob.style.transform = 'translate('+nx+'px,'+ny+'px)';
+            applyControl(nx, ny);
+          });
+          joy.addEventListener('pointerup', function(){ dragging = false; knob.style.transform = 'translate(0,0)' });
+        }
         function place() {
           var obj = makeAirplane();
           if (!nonXrControls && THREE.DeviceOrientationControls) {
@@ -768,6 +923,7 @@
           placed.push(obj);
           lastPlacedSimple = obj;
           window.__activeObject = obj;
+          anchorBase = obj.position.clone();
           placeCount++;
         }
         placeBtn.addEventListener('click', place);
