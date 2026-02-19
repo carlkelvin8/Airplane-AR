@@ -45,6 +45,13 @@
       dir.position.set(1,2,1);
       scene.add(dir);
 
+      let xrHitTestSource = null;
+      let viewerSpace = null;
+      const reticle = new THREE.Mesh(new THREE.RingGeometry(0.15, 0.2, 32), new THREE.MeshBasicMaterial({ color: 0x00ffff }));
+      reticle.rotation.x = -Math.PI / 2;
+      reticle.visible = false;
+      scene.add(reticle);
+
       function makeAirplane() {
         const group = new THREE.Group();
         const fuselage = new THREE.Mesh(new THREE.BoxGeometry(0.3,0.3,2.6), new THREE.MeshStandardMaterial({color:0xcccccc}));
@@ -118,18 +125,31 @@
       const controller = renderer.xr.getController(0);
       controller.addEventListener('select', () => {
         const obj = makeAirplane();
-        const xrCam = renderer.xr.getCamera();
-        const dir = new THREE.Vector3(); xrCam.getWorldDirection(dir);
-        const pos = new THREE.Vector3(); xrCam.getWorldPosition(pos);
-        obj.position.copy(pos.add(dir.multiplyScalar(WORLD_SPAWN_DISTANCE)));
-        obj.scale.set(1,1,1);
+        if (reticle.visible) {
+          obj.position.copy(reticle.position);
+        } else {
+          const xrCam = renderer.xr.getCamera();
+          const dir = new THREE.Vector3(); xrCam.getWorldDirection(dir);
+          const pos = new THREE.Vector3(); xrCam.getWorldPosition(pos);
+          obj.position.copy(pos.add(dir.multiplyScalar(WORLD_SPAWN_DISTANCE)));
+        }
         scene.add(obj);
       });
       scene.add(controller);
 
       renderer.setAnimationLoop((t, frame) => {
         if (renderer.xr.isPresenting) {
-          // In XR mode, we simply render; placement is done via controller select placing in front of camera
+          if (xrHitTestSource && frame) {
+            const results = frame.getHitTestResults(xrHitTestSource);
+            if (results.length) {
+              const hit = results[0];
+              const pose = hit.getPose(renderer.xr.getReferenceSpace());
+              reticle.visible = true;
+              reticle.position.set(pose.transform.position.x, pose.transform.position.y, pose.transform.position.z);
+            } else {
+              reticle.visible = false;
+            }
+          }
           renderer.render(scene, camera);
         } else {
           if (nonXrControls) nonXrControls.update();
@@ -271,7 +291,7 @@
       async function load3dAircraft() {
         try {
           const loader = new GLTFLoader();
-          const glbUrl = 'https://raw.githubusercontent.com/KhronosGroup/glTF-Sample-Models/master/2.0/CesiumAir/glTF-Binary/CesiumAir.glb';
+          const glbUrl = 'https://raw.githubusercontent.com/Ysurac/FlightAirMap-3dmodels/master/b788/b788.glb';
           const gltf = await loader.loadAsync(glbUrl);
           const model = gltf.scene;
           model.traverse(o => { if (o.isMesh) { o.castShadow = true; o.receiveShadow = true; } });
@@ -380,7 +400,7 @@
         }
       };
       startCamBtn.addEventListener('click', () => window.__startCam());
-      renderer.xr.addEventListener('sessionstart', () => {
+      renderer.xr.addEventListener('sessionstart', async () => {
         const v = document.getElementById('previewVideo');
         if (v) v.remove();
         if (window._previewStream) {
@@ -388,6 +408,12 @@
           window._previewStream = null;
         }
         startCamBtn.textContent = 'Start Camera';
+        try {
+          const session = renderer.xr.getSession();
+          viewerSpace = await session.requestReferenceSpace('viewer');
+          const refSpace = await renderer.xr.getReferenceSpace();
+          xrHitTestSource = await session.requestHitTestSource({ space: viewerSpace });
+        } catch (_) {}
       });
     </script>
   </head>
