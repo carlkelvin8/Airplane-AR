@@ -437,6 +437,7 @@
       addMenuItem('Open AR (Scene Viewer)', () => fallbackBtn.click());
       addMenuItem('Place Aircraft', () => placeAircraft());
       addMenuItem('Start Camera', () => __startHandler && __startHandler());
+      addMenuItem('Toggle Device Follow', () => { followDevice = !followDevice; });
       document.body.appendChild(menu);
       menuBtn.addEventListener('click', () => {
         menu.style.display = (menu.style.display === 'none' ? 'block' : 'none');
@@ -476,6 +477,15 @@
       layoutControls();
       window.addEventListener('resize', layoutControls);
       window.addEventListener('orientationchange', layoutControls);
+      try {
+        window.addEventListener('devicemotion', (e) => {
+          if (!followDevice) return;
+          const a = e.accelerationIncludingGravity || e.acceleration || { x:0, y:0, z:0 };
+          cameraTargetPos.x = THREE.MathUtils.clamp(cameraTargetPos.x + (a.x || 0) * 0.002, -0.5, 0.5);
+          cameraTargetPos.y = THREE.MathUtils.clamp(cameraTargetPos.y + (a.y || 0) * 0.002, -0.5, 0.5);
+          cameraTargetPos.z = THREE.MathUtils.clamp(cameraTargetPos.z, -0.2, 0.2);
+        }, { passive: true });
+      } catch (_) {}
 
       window.addEventListener('resize', () => {
         renderer.setSize(window.innerWidth, window.innerHeight);
@@ -626,7 +636,7 @@
               }).catch(()=>{});
           }
           if (!nonXrControls && DeviceOrientationControls) {
-            nonXrControls = new DeviceOrientationControls(camera);
+            nonXrControls = new DeviceOrientationControls(virtualCam);
             nonXrControls.connect();
           }
           renderer.domElement.style.position = 'fixed';
