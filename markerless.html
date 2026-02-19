@@ -209,6 +209,26 @@
       zoomOutBtn.style.bottom = '300px';
       zoomOutBtn.textContent = 'Zoom Out';
       document.body.appendChild(zoomOutBtn);
+      const moveUpBtn = document.createElement('button');
+      moveUpBtn.className = 'btn';
+      moveUpBtn.style.bottom = '396px';
+      moveUpBtn.textContent = 'Move Up';
+      document.body.appendChild(moveUpBtn);
+      const moveDownBtn = document.createElement('button');
+      moveDownBtn.className = 'btn';
+      moveDownBtn.style.bottom = '444px';
+      moveDownBtn.textContent = 'Move Down';
+      document.body.appendChild(moveDownBtn);
+      const tiltUpBtn = document.createElement('button');
+      tiltUpBtn.className = 'btn';
+      tiltUpBtn.style.bottom = '492px';
+      tiltUpBtn.textContent = 'Tilt Up';
+      document.body.appendChild(tiltUpBtn);
+      const tiltDownBtn = document.createElement('button');
+      tiltDownBtn.className = 'btn';
+      tiltDownBtn.style.bottom = '540px';
+      tiltDownBtn.textContent = 'Tilt Down';
+      document.body.appendChild(tiltDownBtn);
       let anchorBase = null;
       function adjustScale(factor) {
         const o = activeObject;
@@ -218,6 +238,12 @@
       }
       zoomInBtn.addEventListener('click', () => adjustScale(1.1));
       zoomOutBtn.addEventListener('click', () => adjustScale(0.9));
+      function adjustHeight(delta) { if (!activeObject) return; activeObject.position.y += delta; }
+      function adjustPitch(delta) { if (!activeObject) return; activeObject.rotation.x += delta; }
+      moveUpBtn.addEventListener('click', () => adjustHeight(0.5));
+      moveDownBtn.addEventListener('click', () => adjustHeight(-0.5));
+      tiltUpBtn.addEventListener('click', () => adjustPitch(0.05));
+      tiltDownBtn.addEventListener('click', () => adjustPitch(-0.05));
       const joy = document.createElement('div');
       joy.style.position = 'fixed';
       joy.style.left = '16px';
@@ -837,10 +863,20 @@
         var resetBtn = createButton('resetScene', 'Reset', '204px');
         var zoomInBtn = createButton('zoomIn', 'Zoom In', '348px');
         var zoomOutBtn = createButton('zoomOut', 'Zoom Out', '300px');
+        var moveUpBtn = createButton('moveUp', 'Move Up', '396px');
+        var moveDownBtn = createButton('moveDown', 'Move Down', '444px');
+        var tiltUpBtn = createButton('tiltUp', 'Tilt Up', '492px');
+        var tiltDownBtn = createButton('tiltDown', 'Tilt Down', '540px');
         var anchorBase = null;
         function adjustScale(f){ var o = window.__activeObject; if (!o) return; var s = Math.max(0.5, Math.min(4, o.scale.x * f)); o.scale.set(s,s,s) }
         zoomInBtn.addEventListener('click', function(){ adjustScale(1.1) });
         zoomOutBtn.addEventListener('click', function(){ adjustScale(0.9) });
+        function adjustHeight(d){ var o = window.__activeObject; if (!o) return; o.position.y += d }
+        function adjustPitch(d){ var o = window.__activeObject; if (!o) return; o.rotation.x += d }
+        moveUpBtn.addEventListener('click', function(){ adjustHeight(0.5) });
+        moveDownBtn.addEventListener('click', function(){ adjustHeight(-0.5) });
+        tiltUpBtn.addEventListener('click', function(){ adjustPitch(0.05) });
+        tiltDownBtn.addEventListener('click', function(){ adjustPitch(-0.05) });
         var joy = document.getElementById('joy');
         if (!joy) {
           joy = document.createElement('div');
