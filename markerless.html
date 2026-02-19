@@ -59,6 +59,8 @@
 
       let xrHitTestSource = null;
       let viewerSpace = null;
+      let xrRefSpace = null;
+      let activeObject = null;
       const reticle = new THREE.Mesh(new THREE.RingGeometry(0.15, 0.2, 32), new THREE.MeshBasicMaterial({ color: 0x00ffff }));
       reticle.rotation.x = -Math.PI / 2;
       reticle.visible = false;
@@ -148,7 +150,8 @@
       let nonXrControls = null;
 
       const WORLD_SPAWN_DISTANCE = 12;
-      const MODEL_SCALE = 0.02;
+      const MODEL_SCALE = 1;
+      const DESIRED_LENGTH_M = 64;
       const button = ARButton.createButton(renderer, { requiredFeatures:['hit-test'] });
       button.className = 'btn';
       button.textContent = 'Start AR';
@@ -205,6 +208,7 @@
           obj.position.copy(pos.add(dir.multiplyScalar(WORLD_SPAWN_DISTANCE)));
         }
         scene.add(obj);
+        activeObject = obj;
       });
       scene.add(controller);
 
@@ -214,7 +218,7 @@
             const results = frame.getHitTestResults(xrHitTestSource);
             if (results.length) {
               const hit = results[0];
-              const pose = hit.getPose(renderer.xr.getReferenceSpace());
+              const pose = hit.getPose(xrRefSpace || renderer.xr.getReferenceSpace());
               reticle.visible = true;
               reticle.position.set(pose.transform.position.x, pose.transform.position.y, pose.transform.position.z);
             } else {
@@ -342,6 +346,7 @@
         scene.add(obj);
         placed.push(obj);
         lastPlacedSimple = obj;
+        activeObject = obj;
         placeCount++;
       }
       placeBtn.addEventListener('click', placeAircraft);
@@ -374,6 +379,11 @@
           const minY = tmpBox.min.y;
           model.position.y += -minY;
           root.add(model);
+          const sizedBox = new THREE.Box3().setFromObject(root);
+          const sizeVec = new THREE.Vector3(); sizedBox.getSize(sizeVec);
+          const currentLength = Math.max(sizeVec.x, sizeVec.y, sizeVec.z);
+          const scaleFactor = DESIRED_LENGTH_M / (currentLength || 1);
+          root.scale.set(scaleFactor, scaleFactor, scaleFactor);
           // Position: replace last simple if exists; else in front of camera
           if (lastPlacedSimple) {
             root.position.copy(lastPlacedSimple.position);
@@ -414,6 +424,7 @@
           });
           scene.add(root);
           placed.push(root);
+          activeObject = root;
         } catch (e) {
           alert('Failed to load 3D aircraft. Using simple model instead.');
           placeAircraft();
@@ -482,10 +493,47 @@
         try {
           const session = renderer.xr.getSession();
           viewerSpace = await session.requestReferenceSpace('viewer');
-          const refSpace = await renderer.xr.getReferenceSpace();
+          xrRefSpace = await session.requestReferenceSpace('local-floor');
           xrHitTestSource = await session.requestHitTestSource({ space: viewerSpace });
         } catch (_) {}
       });
+      (function addGestureControls(){
+        const pointers = new Map();
+        let lastPinch = 0;
+        let lastX = 0;
+        window.addEventListener('pointerdown', (e) => {
+          pointers.set(e.pointerId, { x: e.clientX, y: e.clientY });
+          lastX = e.clientX;
+        });
+        window.addEventListener('pointermove', (e) => {
+          if (!activeObject) return;
+          const p = pointers.get(e.pointerId);
+          if (!p) return;
+          const dx = e.clientX - p.x;
+          const dy = e.clientY - p.y;
+          pointers.set(e.pointerId, { x: e.clientX, y: e.clientY });
+          if (pointers.size === 1) {
+            activeObject.rotation.y += dx * 0.005;
+          } else if (pointers.size === 2) {
+            const arr = Array.from(pointers.values());
+            const d = Math.hypot(arr[0].x - arr[1].x, arr[0].y - arr[1].y);
+            if (lastPinch) {
+              const delta = d - lastPinch;
+              const s = Math.max(0.5, Math.min(4, activeObject.scale.x + delta * 0.002));
+              activeObject.scale.set(s, s, s);
+            }
+            lastPinch = d;
+          }
+        });
+        window.addEventListener('pointerup', (e) => {
+          pointers.delete(e.pointerId);
+          if (pointers.size < 2) lastPinch = 0;
+        });
+        window.addEventListener('pointercancel', (e) => {
+          pointers.delete(e.pointerId);
+          if (pointers.size < 2) lastPinch = 0;
+        });
+      })();
     </script>
   </head>
   <body>
@@ -684,6 +732,7 @@
           scene.add(obj);
           placed.push(obj);
           lastPlacedSimple = obj;
+          window.__activeObject = obj;
           placeCount++;
         }
         placeBtn.addEventListener('click', place);
@@ -709,12 +758,17 @@
             loader.load(glbUrl, function(gltf){
               var model = gltf.scene;
               model.traverse(function(o){ if (o.isMesh) { o.castShadow = true; o.receiveShadow = true; } });
-              model.scale.set(0.02,0.02,0.02);
+              model.scale.set(1,1,1);
               var root = new THREE.Group();
               var box = new THREE.Box3().setFromObject(model);
               var minY = box.min.y;
               model.position.y += -minY;
               root.add(model);
+              var sized = new THREE.Box3().setFromObject(root);
+              var size = new THREE.Vector3(); sized.getSize(size);
+              var currentLen = Math.max(size.x, size.y, size.z);
+              var factor = 64 / (currentLen || 1);
+              root.scale.set(factor, factor, factor);
               if (lastPlacedSimple) {
                 root.position.copy(lastPlacedSimple.position);
                 root.rotation.copy(lastPlacedSimple.rotation);
@@ -745,6 +799,7 @@
               });
               scene.add(root);
               placed.push(root);
+              window.__activeObject = root;
             }, function(){}, function(){ place(); });
           } catch(e) { place(); }
         }
@@ -767,6 +822,36 @@
         loop();
         window.__autoPlaceAfterCamera = window.__autoPlaceAfterCamera || function(){ try{ load3d() }catch(e){} };
         setTimeout(function(){ try{ load3d() }catch(e){} }, 200);
+        (function addGesture(){
+          var pointers = {};
+          var lastPinch = 0;
+          window.addEventListener('pointerdown', function(e){ pointers[e.pointerId] = { x:e.clientX, y:e.clientY } });
+          window.addEventListener('pointermove', function(e){
+            var obj = window.__activeObject;
+            if (!obj) return;
+            var p = pointers[e.pointerId];
+            if (!p) return;
+            var dx = e.clientX - p.x;
+            var dy = e.clientY - p.y;
+            pointers[e.pointerId] = { x:e.clientX, y:e.clientY };
+            var ids = Object.keys(pointers);
+            if (ids.length === 1) {
+              obj.rotation.y += dx * 0.005;
+            } else if (ids.length === 2) {
+              var a = pointers[ids[0]], b = pointers[ids[1]];
+              var d = Math.hypot(a.x - b.x, a.y - b.y);
+              if (lastPinch) {
+                var delta = d - lastPinch;
+                var s = Math.max(0.5, Math.min(4, obj.scale.x + delta * 0.002));
+                obj.scale.set(s, s, s);
+              }
+              lastPinch = d;
+            }
+          });
+          function end(e){ delete pointers[e.pointerId]; var ids = Object.keys(pointers); if (ids.length < 2) lastPinch = 0; }
+          window.addEventListener('pointerup', end);
+          window.addEventListener('pointercancel', end);
+        })();
       })();
     </script>
   </body>
