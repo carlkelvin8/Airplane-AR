@@ -14,13 +14,22 @@
       .unsupported.active { display:flex }
       .btn { position:fixed; bottom:12px; left:50%; transform:translateX(-50%); background:rgba(255,255,255,.15); border:1px solid rgba(255,255,255,.3); color:#fff; padding:10px 14px; border-radius:10px; z-index:2000; cursor:pointer; pointer-events:auto }
     </style>
+    <script type="importmap">
+      {
+        "imports": {
+          "three": "https://cdn.jsdelivr.net/npm/three@0.155.0/build/three.module.js"
+        }
+      }
+    </script>
     <script type="module">
       import * as THREE from 'https://cdn.jsdelivr.net/npm/three@0.155.0/build/three.module.js';
       import { ARButton } from 'https://cdn.jsdelivr.net/npm/three@0.155.0/examples/jsm/webxr/ARButton.js';
       import { RGBELoader } from 'https://cdn.jsdelivr.net/npm/three@0.155.0/examples/jsm/loaders/RGBELoader.js';
+      import { OBJLoader } from 'https://cdn.jsdelivr.net/npm/three@0.155.0/examples/jsm/loaders/OBJLoader.js';
+      window.THREE = THREE;
       let DeviceOrientationControls = null;
       try {
-        ({ DeviceOrientationControls } = await import('https://cdn.jsdelivr.net/npm/three@0.155.0/examples/jsm/controls/DeviceOrientationControls.js'));
+        ({ DeviceOrientationControls } = await import('https://unpkg.com/three@0.155.0/examples/jsm/controls/DeviceOrientationControls.js'));
       } catch (e) {
         console.warn('DeviceOrientationControls import failed', e);
       }
@@ -368,11 +377,32 @@
       }
       async function load3dAircraft() {
         try {
-          const loader = new GLTFLoader();
-          const glbUrl = 'https://raw.githubusercontent.com/Ysurac/FlightAirMap-3dmodels/master/b788/b788.glb';
-          const gltf = await loader.loadAsync(glbUrl);
-          const model = gltf.scene;
-          model.traverse(o => { if (o.isMesh) { o.castShadow = true; o.receiveShadow = true; } });
+          let model = null;
+          const objUrl = 'https://assets.codepen.io/557388/1405+Plane_1.obj';
+          const objLoader = new OBJLoader();
+          try {
+            const resp = await fetch(objUrl, { mode: 'cors' });
+            console.log('[Model] Fetched OBJ text:', resp.ok);
+            const text = await resp.text();
+            model = objLoader.parse(text);
+          } catch (e1) {
+            console.warn('[Model] OBJ fetch failed, trying loader.loadAsync', e1);
+            try {
+              model = await objLoader.loadAsync(objUrl);
+            } catch (e2) {
+              console.warn('[Model] OBJ loadAsync failed, falling back to GLB', e2);
+              const gltfLoader = new GLTFLoader();
+              const glbUrl = 'https://raw.githubusercontent.com/Ysurac/FlightAirMap-3dmodels/master/b788/b788.glb';
+              const gltf = await gltfLoader.loadAsync(glbUrl);
+              model = gltf.scene;
+            }
+          }
+          model.traverse(o => { 
+            if (o.isMesh) { 
+              o.castShadow = true; o.receiveShadow = true; 
+              o.material = new THREE.MeshPhongMaterial({ color: 0x171511, specular: 0xD0CBC7, shininess: 5, flatShading: true });
+            } 
+          });
           model.scale.set(MODEL_SCALE, MODEL_SCALE, MODEL_SCALE);
           const root = new THREE.Group();
           // Fix pivot: move model up so bottom (landing gear area) sits at root origin
@@ -555,8 +585,8 @@
       </div>
       <button class="btn" id="startCam" style="bottom:60px">Start Camera</button>
     </div>
-    <script src="https://cdn.jsdelivr.net/npm/three@0.155.0/build/three.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/three@0.155.0/examples/js/loaders/GLTFLoader.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/three@0.155.0/examples/js/loaders/OBJLoader.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/three@0.155.0/examples/js/controls/DeviceOrientationControls.js"></script>
     <script>
       (function(){
@@ -758,12 +788,15 @@
         }
         function load3d() {
           try {
-            var loader = new THREE.GLTFLoader();
-            var glbUrl = 'https://raw.githubusercontent.com/Ysurac/FlightAirMap-3dmodels/master/b788/b788.glb';
-            loader.load(glbUrl, function(gltf){
-              var model = gltf.scene;
-              model.traverse(function(o){ if (o.isMesh) { o.castShadow = true; o.receiveShadow = true; } });
-              model.scale.set(1,1,1);
+            var objUrl = 'https://assets.codepen.io/557388/1405+Plane_1.obj';
+            var loader = new THREE.OBJLoader();
+            var model = null;
+            fetch(objUrl, { mode: 'cors' })
+              .then(function(resp){ return resp.text() })
+              .then(function(text){
+                model = loader.parse(text);
+                model.traverse(function(o){ if (o.isMesh) { o.castShadow = true; o.receiveShadow = true; o.material = new THREE.MeshPhongMaterial({ color: 0x171511, specular: 0xD0CBC7, shininess: 5, flatShading: true }); } });
+                model.scale.set(1,1,1);
               var root = new THREE.Group();
               var box = new THREE.Box3().setFromObject(model);
               var minY = box.min.y;
@@ -805,7 +838,28 @@
               scene.add(root);
               placed.push(root);
               window.__activeObject = root;
-            }, function(){}, function(){ place(); });
+            }).catch(function(e){
+              try {
+                loader.load(objUrl, function(obj){
+                  model = obj;
+                  model.traverse(function(o){ if (o.isMesh) { o.castShadow = true; o.receiveShadow = true; o.material = new THREE.MeshPhongMaterial({ color: 0x171511, specular: 0xD0CBC7, shininess: 5, flatShading: true }); } });
+                  model.scale.set(1,1,1);
+                  var root = new THREE.Group();
+                  var box = new THREE.Box3().setFromObject(model);
+                  var minY = box.min.y;
+                  model.position.y += -minY;
+                  root.add(model);
+                  var sized = new THREE.Box3().setFromObject(root);
+                  var size = new THREE.Vector3(); sized.getSize(size);
+                  var currentLen = Math.max(size.x, size.y, size.z);
+                  var factor = 64 / (currentLen || 1);
+                  root.scale.set(factor, factor, factor);
+                  scene.add(root);
+                  placed.push(root);
+                  window.__activeObject = root;
+                }, function(){}, function(){ place(); });
+              } catch(_){ place(); }
+            });
           } catch(e) { place(); }
         }
         load3dBtn.addEventListener('click', load3d);
