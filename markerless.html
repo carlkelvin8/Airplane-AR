@@ -175,22 +175,7 @@
       const WORLD_SPAWN_DISTANCE = 12;
       const MODEL_SCALE = 1;
       const DESIRED_LENGTH_M = 64;
-      const button = ARButton.createButton(renderer, {
-        requiredFeatures: ['hit-test','local-floor'],
-        optionalFeatures: ['anchors','dom-overlay'],
-        domOverlay: { root: document.body }
-      });
-      button.className = 'btn';
-      button.textContent = 'Start AR';
-      document.body.appendChild(button);
-      button.addEventListener('click', async () => {
-        console.log('[WebXR] Start AR clicked');
-        try {
-          // Prime permission so AR session can start smoothly
-          const s = await navigator.mediaDevices.getUserMedia({ video: { facingMode: 'environment' }, audio: false });
-          s.getTracks().forEach(t => t.stop());
-        } catch (_) {}
-      });
+      const button = null;
       const startCamBtn = document.getElementById('startCam');
       let __startHandler = null;
       const fallbackBtn = document.createElement('button');
@@ -378,17 +363,17 @@
         applyControlR(nx, ny);
       });
       joyR.addEventListener('pointerup', () => { draggingR = false; knobR.style.transform = 'translate(0,0)'; });
-      joy.style.display = 'block';
+      joy.style.display = 'none';
       joyR.style.display = 'none';
-      const dpad = document.createElement('div');
-      dpad.style.position = 'fixed';
-      dpad.style.right = '16px';
-      dpad.style.bottom = '16px';
-      dpad.style.width = '160px';
-      dpad.style.height = '160px';
-      dpad.style.zIndex = '2000';
-      document.body.appendChild(dpad);
-      function makeArrow(label) {
+      const dpadL = document.createElement('div');
+      dpadL.style.position = 'fixed';
+      dpadL.style.left = '16px';
+      dpadL.style.bottom = '16px';
+      dpadL.style.width = '160px';
+      dpadL.style.height = '160px';
+      dpadL.style.zIndex = '2000';
+      document.body.appendChild(dpadL);
+      function makeArrowL(label) {
         const b = document.createElement('button');
         b.className = 'btn';
         b.textContent = label;
@@ -399,15 +384,85 @@
         b.style.opacity = '0.9';
         return b;
       }
+      const gridL = document.createElement('div');
+      gridL.style.display = 'grid';
+      gridL.style.gridTemplateColumns = 'repeat(3, 1fr)';
+      gridL.style.gridTemplateRows = 'repeat(3, 1fr)';
+      gridL.style.width = '100%';
+      gridL.style.height = '100%';
+      dpadL.appendChild(gridL);
+      const upL = makeArrowL('▲');
+      const downL = makeArrowL('▼');
+      const leftL = makeArrowL('◀');
+      const rightL = makeArrowL('▶');
+      upL.style.position = 'relative'; upL.style.transform = 'none'; upL.style.bottom = 'auto'; upL.style.left = 'auto'; upL.style.right = 'auto';
+      downL.style.position = 'relative'; downL.style.transform = 'none'; downL.style.bottom = 'auto'; downL.style.left = 'auto'; downL.style.right = 'auto';
+      leftL.style.position = 'relative'; leftL.style.transform = 'none'; leftL.style.bottom = 'auto'; leftL.style.left = 'auto'; leftL.style.right = 'auto';
+      rightL.style.position = 'relative'; rightL.style.transform = 'none'; rightL.style.bottom = 'auto'; rightL.style.left = 'auto'; rightL.style.right = 'auto';
+      upL.style.placeSelf = 'center'; downL.style.placeSelf = 'center'; leftL.style.placeSelf = 'center'; rightL.style.placeSelf = 'center';
+      upL.style.gridColumn = '2'; upL.style.gridRow = '1';
+      downL.style.gridColumn = '2'; downL.style.gridRow = '3';
+      leftL.style.gridColumn = '1'; leftL.style.gridRow = '2';
+      rightL.style.gridColumn = '3'; rightL.style.gridRow = '2';
+      gridL.appendChild(upL); gridL.appendChild(downL); gridL.appendChild(leftL); gridL.appendChild(rightL);
+      function rotateStep(dx, dy) {
+        if (!activeObject) return;
+        const yaw = 0.04, pitch = 0.04;
+        activeObject.rotation.y += dx * yaw;
+        activeObject.rotation.x += dy * pitch;
+      }
+      let holdTimerRotate = null;
+      function onHoldL(fn) { fn(); holdTimerRotate = setInterval(fn, 60); }
+      function endHoldL() { if (holdTimerRotate) { clearInterval(holdTimerRotate); holdTimerRotate = null; } }
+      upL.addEventListener('pointerdown', () => onHoldL(() => rotateStep(0, 1)));
+      downL.addEventListener('pointerdown', () => onHoldL(() => rotateStep(0, -1)));
+      leftL.addEventListener('pointerdown', () => onHoldL(() => rotateStep(-1, 0)));
+      rightL.addEventListener('pointerdown', () => onHoldL(() => rotateStep(1, 0)));
+      [upL,downL,leftL,rightL].forEach(b => {
+        b.addEventListener('pointerup', endHoldL);
+        b.addEventListener('pointerleave', endHoldL);
+        b.addEventListener('pointercancel', endHoldL);
+      });
+      const dpad = document.createElement('div');
+      dpad.style.position = 'fixed';
+      dpad.style.right = '16px';
+      dpad.style.bottom = '16px';
+      dpad.style.width = '160px';
+      dpad.style.height = '160px';
+      dpad.style.zIndex = '2000';
+      const gridR = document.createElement('div');
+      gridR.style.display = 'grid';
+      gridR.style.gridTemplateColumns = 'repeat(3, 1fr)';
+      gridR.style.gridTemplateRows = 'repeat(3, 1fr)';
+      gridR.style.width = '100%';
+      gridR.style.height = '100%';
+      dpad.appendChild(gridR);
+      document.body.appendChild(dpad);
+      function makeArrow(label) {
+        const b = document.createElement('button');
+        b.className = 'btn';
+        b.textContent = label;
+        b.style.position = 'relative';
+        b.style.transform = 'none';
+        b.style.left = 'auto';
+        b.style.right = 'auto';
+        b.style.bottom = 'auto';
+        b.style.width = '60px';
+        b.style.height = '60px';
+        b.style.borderRadius = '12px';
+        b.style.opacity = '0.9';
+        b.style.placeSelf = 'center';
+        return b;
+      }
       const upBtn = makeArrow('▲');
       const downBtn = makeArrow('▼');
       const leftBtn = makeArrow('◀');
       const rightBtn = makeArrow('▶');
-      upBtn.style.left = '50%'; upBtn.style.transform = 'translateX(-50%)'; upBtn.style.top = '0';
-      downBtn.style.left = '50%'; downBtn.style.transform = 'translateX(-50%)'; downBtn.style.bottom = '0';
-      leftBtn.style.top = '50%'; leftBtn.style.transform = 'translateY(-50%)'; leftBtn.style.left = '0';
-      rightBtn.style.top = '50%'; rightBtn.style.transform = 'translateY(-50%)'; rightBtn.style.right = '0';
-      dpad.appendChild(upBtn); dpad.appendChild(downBtn); dpad.appendChild(leftBtn); dpad.appendChild(rightBtn);
+      upBtn.style.gridColumn = '2'; upBtn.style.gridRow = '1';
+      downBtn.style.gridColumn = '2'; downBtn.style.gridRow = '3';
+      leftBtn.style.gridColumn = '1'; leftBtn.style.gridRow = '2';
+      rightBtn.style.gridColumn = '3'; rightBtn.style.gridRow = '2';
+      gridR.appendChild(upBtn); gridR.appendChild(downBtn); gridR.appendChild(leftBtn); gridR.appendChild(rightBtn);
       let holdTimer = null;
       function moveActive(dx, dy) {
         if (!activeObject) return;
@@ -486,15 +541,7 @@
       addMenuItem('Load 3D Aircraft', () => load3dAircraft());
       addMenuItem('Reset', () => resetBtn.click());
       addMenuItem('Start Camera', () => __startHandler && __startHandler());
-      addMenuItem('Toggle Device Follow', () => { 
-        followDevice = !followDevice; 
-        leftAnalogMode = followDevice ? true : leftAnalogMode;
-        if (typeof joy !== 'undefined' && typeof dpadL !== 'undefined') {
-          joy.style.display = leftAnalogMode ? 'block' : 'none';
-          dpadL.style.display = leftAnalogMode ? 'none' : 'block';
-        }
-        layoutControls();
-      });
+      // Removed Toggle Device Follow from menu
       document.body.appendChild(menu);
       menuBtn.addEventListener('click', () => {
         menu.style.display = (menu.style.display === 'none' ? 'block' : 'none');
@@ -515,6 +562,12 @@
         knob.style.height = knobSize + 'px';
         knob.style.marginLeft = -Math.round(knobSize/2) + 'px';
         knob.style.marginTop = -Math.round(knobSize/2) + 'px';
+        if (typeof dpadL !== 'undefined') {
+          dpadL.style.width = size + 'px';
+          dpadL.style.height = size + 'px';
+          dpadL.style.left = '16px';
+          dpadL.style.bottom = safeBottom + 'px';
+        }
         joyR.style.width = size + 'px';
         joyR.style.height = size + 'px';
         joyR.style.borderRadius = Math.round(size/2) + 'px';
@@ -583,15 +636,7 @@
       renderer.setAnimationLoop((t, frame) => {
         const cam = renderer.xr.isPresenting ? renderer.xr.getCamera() : camera;
         const eul = new THREE.Euler().setFromQuaternion(cam.quaternion, 'YXZ');
-        const dyaw = Math.abs(eul.y - __prevYaw);
-        const dpitch = Math.abs(eul.x - __prevPitch);
-        if (followDevice && (dyaw + dpitch) > 0.02) {
-          leftAnalogMode = true;
-          if (typeof joy !== 'undefined' && typeof dpadL !== 'undefined') {
-            joy.style.display = 'block';
-            dpadL.style.display = 'none';
-          }
-        }
+        // keep arrows on left; do not auto-switch to analog
         __prevYaw = eul.y; __prevPitch = eul.x;
         if (renderer.xr.isPresenting) {
           if (xrHitTestSource && frame) {
