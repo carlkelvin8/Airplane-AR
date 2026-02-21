@@ -3,7 +3,7 @@
   <head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
-    <title>Markerless AR Aircraft</title>
+    <title>AR Aircraft</title>
     <style>
       html, body { margin:0; height:100%; background:#000; color:#fff; font-family:system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial, sans-serif }
       #app { position:fixed; inset:0 }
@@ -13,6 +13,211 @@
       .unsupported { position:absolute; inset:0; display:none; align-items:center; justify-content:center; text-align:center; padding:24px; background:#0a0a0a }
       .unsupported.active { display:flex }
       .btn { position:fixed; bottom:12px; left:50%; transform:translateX(-50%); background:rgba(255,255,255,.15); border:1px solid rgba(255,255,255,.3); color:#fff; padding:10px 14px; border-radius:10px; z-index:2000; cursor:pointer; pointer-events:auto }
+      /* ===== TITLE STYLES ===== */
+.title {
+  background: linear-gradient(135deg, #0044cc, #00aaff); /* Gradient color (blue to light blue) */
+  color: white; /* Text color */
+  font-size: 1.2rem; /* Smaller font size */
+  font-weight: bold; /* Bold the text */
+  padding: 8px 12px; /* Further reduce padding */
+  text-align: center; /* Center the text */
+  border-radius: 8px; /* Rounded corners for the background */
+  font-family: 'Arial', sans-serif; /* Font family */
+  text-shadow: 2px 2px 6px rgba(0, 0, 0, 0.3); /* Adds a subtle shadow for readability */
+  margin: 8px; /* Reduce margin */
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.title img {
+  height: 20px; /* Smaller logo size */
+  margin-right: 4px; /* Reduce space between the logo and text */
+}
+
+/* Media Query for responsiveness */
+@media (max-width: 768px) {
+  .title {
+    font-size: 1rem; /* Even smaller font size for mobile devices */
+    padding: 6px 10px; /* Adjust padding for mobile */
+  }
+  .title img {
+    height: 18px; /* Even smaller logo size for mobile screens */
+  }
+}
+          /* ===== D-PAD STYLES ===== */
+    .dpad {
+      position: fixed;
+      right: 16px;
+      bottom: 16px;
+      width: clamp(96px, 28vw, 160px);
+      height: clamp(96px, 28vw, 160px);
+      z-index: 2000;
+      touch-action: none;
+    }
+
+    .dpad-grid {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      grid-template-rows: repeat(3, 1fr);
+      width: 100%;
+      height: 100%;
+    }
+
+    .dpad-btn {
+      place-self: center;
+      width: 45%;
+      height: 45%;
+      border-radius: 999px;
+      border: none;
+      background: linear-gradient(145deg, #2b2b2b, #111);
+      box-shadow:
+        inset 2px 2px 4px rgba(255,255,255,0.15),
+        inset -2px -2px 4px rgba(0,0,0,0.6),
+        0 4px 10px rgba(0,0,0,0.5);
+      opacity: 0.95;
+    }
+
+    .dpad-btn:active {
+      transform: scale(0.92);
+      box-shadow:
+        inset 3px 3px 6px rgba(0,0,0,0.7);
+    }
+
+  /* ===== ZOOM IN BUTTON ===== */
+  .zoom-btn {
+    position: fixed;
+    right: 16px;
+    width: 44px;
+    height: 44px;
+    border-radius: 50%;
+    border: none;
+    background: linear-gradient(145deg, #2b2b2b, #111);
+    box-shadow:
+      inset 2px 2px 4px rgba(255,255,255,0.15),
+      inset -2px -2px 4px rgba(0,0,0,0.6),
+      0 4px 10px rgba(0,0,0,0.5);
+    z-index: 2000;
+  }
+.top-controls {
+  position: fixed;
+  bottom: 12px;
+  left: 50%;
+  transform: translateX(-50%);
+  display: flex;
+  gap: 10px;
+  align-items: center;
+  z-index: 2100;
+}
+
+/* Media Query for Mobile/Tablets */
+@media (max-width: 768px) {
+  .top-controls {
+  position: fixed;
+  bottom: 100px;
+  left: 40%;
+  transform: translateX(-50%);
+  display: flex;
+  gap: 10px;
+  align-items: center;
+  z-index: 2100;
+  }
+}
+
+.control-btn {
+  width: clamp(38px, 9vw, 44px);
+  height: clamp(38px, 9vw, 44px);
+  border-radius: 50%;
+  border: none;
+  background: linear-gradient(145deg, #2b2b2b, #111);
+  color: white;
+  font-size: 18px;
+  display: grid;
+  place-items: center;
+  cursor: pointer;
+}
+
+  /* ===== MENU BUTTON ===== */
+  .menu-btn {
+    position: fixed;
+    top: 16px;
+    right: 16px;
+    width: 44px;
+    height: 44px;
+    border-radius: 50%;
+    border: none;
+    background: linear-gradient(145deg, #2b2b2b, #111);
+    box-shadow:
+      inset 2px 2px 4px rgba(255,255,255,0.15),
+      inset -2px -2px 4px rgba(0,0,0,0.6),
+      0 4px 10px rgba(0,0,0,0.5);
+    display: grid;
+    place-items: center;
+    z-index: 2100;
+    cursor: pointer;
+  }
+
+  /* Hamburger */
+  .menu-bars {
+    width: 22px;
+    height: 16px;
+    display: grid;
+    gap: 4px;
+  }
+
+  .menu-bar {
+    height: 2px;
+    background: rgba(255,255,255,0.9);
+    border-radius: 2px;
+    transition: 0.3s ease;
+  }
+
+  /* Animate to X */
+  .menu-btn.active .menu-bar:nth-child(1) {
+    transform: translateY(6px) rotate(45deg);
+  }
+  .menu-btn.active .menu-bar:nth-child(2) {
+    opacity: 0;
+  }
+  .menu-btn.active .menu-bar:nth-child(3) {
+    transform: translateY(-6px) rotate(-45deg);
+  }
+
+  /* ===== DROPDOWN MENU ===== */
+.menu-dropdown {
+  position: fixed;
+  top: 70px;
+  right: 16px;
+  min-width: 200px;
+  background: rgba(20,20,20,0.97);
+  border: 1px solid rgba(255,255,255,0.2);
+  border-radius: 12px;
+  padding: 6px;
+  z-index: 99999;
+
+  opacity: 0;
+  transform: translateY(-10px) scale(0.98);
+  visibility: hidden;
+  transition: opacity 0.25s ease, transform 0.25s ease, visibility 0.25s;
+}
+
+.menu-dropdown.show {
+  opacity: 1;
+  transform: translateY(0) scale(1);
+  visibility: visible;
+}
+
+.menu-item {
+  padding: 10px 12px;
+  border-radius: 8px;
+  cursor: pointer;
+  color: white;
+}
+
+.menu-item:hover {
+  background: rgba(255,255,255,0.08);
+}
+
     </style>
     <script type="importmap">
       {
@@ -83,6 +288,9 @@
       let lastHitResult = null;
       let xrAnchorsSupported = false;
       const xrAnchors = [];
+      const labelSprites = [];
+      const labelLines = [];
+      const overlayMeshes = [];
       let activeObject = null;
       const reticle = new THREE.Mesh(new THREE.RingGeometry(0.15, 0.2, 32), new THREE.MeshBasicMaterial({ color: 0x00ffff }));
       reticle.rotation.x = -Math.PI / 2;
@@ -227,26 +435,33 @@
       resetBtn.style.bottom = '204px';
       resetBtn.textContent = 'Reset';
       document.body.appendChild(resetBtn);
-      const zoomInBtn = document.createElement('button');
-      zoomInBtn.className = 'btn';
-      zoomInBtn.style.bottom = '160px';
-      zoomInBtn.style.right = '20px';
-      zoomInBtn.style.left = 'auto';
-      zoomInBtn.style.width = '44px';
-      zoomInBtn.style.height = '44px';
-      zoomInBtn.style.borderRadius = '22px';
-      zoomInBtn.textContent = '+';
-      document.body.appendChild(zoomInBtn);
-      const zoomOutBtn = document.createElement('button');
-      zoomOutBtn.className = 'btn';
-      zoomOutBtn.style.bottom = '100px';
-      zoomOutBtn.style.right = '20px';
-      zoomOutBtn.style.left = 'auto';
-      zoomOutBtn.style.width = '44px';
-      zoomOutBtn.style.height = '44px';
-      zoomOutBtn.style.borderRadius = '22px';
-      zoomOutBtn.textContent = '-';
-      document.body.appendChild(zoomOutBtn);
+const zoomInBtn = document.createElement('button');
+zoomInBtn.className = 'btn';
+zoomInBtn.style.top = '8px';  // Move the button up (adjust as needed)
+zoomInBtn.style.left = '16px';  // Keep the button on the left
+zoomInBtn.style.width = '30px';
+zoomInBtn.style.height = '30px';
+zoomInBtn.style.borderRadius = '22px';
+zoomInBtn.style.transform = 'none';
+zoomInBtn.style.display = 'flex';
+zoomInBtn.style.justifyContent = 'center';
+zoomInBtn.style.alignItems = 'center';
+zoomInBtn.textContent = '+';
+document.body.appendChild(zoomInBtn);
+
+const zoomOutBtn = document.createElement('button');
+zoomOutBtn.className = 'btn';
+zoomOutBtn.style.top = '62px';  // Move the button up (adjust as needed)
+zoomOutBtn.style.left = '16px';  // Keep the button on the left
+zoomOutBtn.style.width = '30px';
+zoomOutBtn.style.height = '30px';
+zoomOutBtn.style.borderRadius = '22px';
+zoomOutBtn.style.transform = 'none';
+zoomOutBtn.style.display = 'flex';
+zoomOutBtn.style.justifyContent = 'center';
+zoomOutBtn.style.alignItems = 'center';
+zoomOutBtn.textContent = '-';
+document.body.appendChild(zoomOutBtn);      document.body.appendChild(zoomOutBtn);
       const moveUpBtn = document.createElement('button');
       moveUpBtn.className = 'btn';
       moveUpBtn.style.bottom = '396px';
@@ -390,225 +605,276 @@
       joyR.addEventListener('pointerup', () => { draggingR = false; knobR.style.transform = 'translate(0,0)'; });
       joy.style.display = 'none';
       joyR.style.display = 'none';
-      const dpadL = document.createElement('div');
-      dpadL.style.position = 'fixed';
-      dpadL.style.left = '16px';
-      dpadL.style.bottom = '16px';
-      dpadL.style.width = '160px';
-      dpadL.style.height = '160px';
-      dpadL.style.zIndex = '2000';
-      document.body.appendChild(dpadL);
-      function makeArrowL(label) {
-        const b = document.createElement('button');
-        b.className = 'btn';
-        b.textContent = label;
-        b.style.position = 'absolute';
-        b.style.width = '60px';
-        b.style.height = '60px';
-        b.style.borderRadius = '12px';
-        b.style.opacity = '0.9';
-        return b;
-      }
-      const gridL = document.createElement('div');
-      gridL.style.display = 'grid';
-      gridL.style.gridTemplateColumns = 'repeat(3, 1fr)';
-      gridL.style.gridTemplateRows = 'repeat(3, 1fr)';
-      gridL.style.width = '100%';
-      gridL.style.height = '100%';
-      dpadL.appendChild(gridL);
-      const upL = makeArrowL('▲');
-      const downL = makeArrowL('▼');
-      const leftL = makeArrowL('◀');
-      const rightL = makeArrowL('▶');
-      upL.style.position = 'relative'; upL.style.transform = 'none'; upL.style.bottom = 'auto'; upL.style.left = 'auto'; upL.style.right = 'auto';
-      downL.style.position = 'relative'; downL.style.transform = 'none'; downL.style.bottom = 'auto'; downL.style.left = 'auto'; downL.style.right = 'auto';
-      leftL.style.position = 'relative'; leftL.style.transform = 'none'; leftL.style.bottom = 'auto'; leftL.style.left = 'auto'; leftL.style.right = 'auto';
-      rightL.style.position = 'relative'; rightL.style.transform = 'none'; rightL.style.bottom = 'auto'; rightL.style.left = 'auto'; rightL.style.right = 'auto';
-      upL.style.placeSelf = 'center'; downL.style.placeSelf = 'center'; leftL.style.placeSelf = 'center'; rightL.style.placeSelf = 'center';
-      upL.style.gridColumn = '2'; upL.style.gridRow = '1';
-      downL.style.gridColumn = '2'; downL.style.gridRow = '3';
-      leftL.style.gridColumn = '1'; leftL.style.gridRow = '2';
-      rightL.style.gridColumn = '3'; rightL.style.gridRow = '2';
-      gridL.appendChild(upL); gridL.appendChild(downL); gridL.appendChild(leftL); gridL.appendChild(rightL);
-      function rotateStep(dx, dy) {
-        if (!activeObject) return;
-        const yaw = 0.04, pitch = 0.04;
-        activeObject.rotation.y += dx * yaw;
-        activeObject.rotation.x += dy * pitch;
-      }
-      let holdTimerRotate = null;
-      function onHoldL(fn) { fn(); holdTimerRotate = setInterval(fn, 60); }
-      function endHoldL() { if (holdTimerRotate) { clearInterval(holdTimerRotate); holdTimerRotate = null; } }
-      upL.addEventListener('pointerdown', () => onHoldL(() => rotateStep(0, 1)));
-      downL.addEventListener('pointerdown', () => onHoldL(() => rotateStep(0, -1)));
-      leftL.addEventListener('pointerdown', () => onHoldL(() => rotateStep(-1, 0)));
-      rightL.addEventListener('pointerdown', () => onHoldL(() => rotateStep(1, 0)));
-      [upL,downL,leftL,rightL].forEach(b => {
-        b.addEventListener('pointerup', endHoldL);
-        b.addEventListener('pointerleave', endHoldL);
-        b.addEventListener('pointercancel', endHoldL);
-      });
-      const dpad = document.createElement('div');
-      dpad.style.position = 'fixed';
-      dpad.style.right = '16px';
-      dpad.style.bottom = '16px';
-      dpad.style.width = '160px';
-      dpad.style.height = '160px';
-      dpad.style.zIndex = '2000';
-      const gridR = document.createElement('div');
-      gridR.style.display = 'grid';
-      gridR.style.gridTemplateColumns = 'repeat(3, 1fr)';
-      gridR.style.gridTemplateRows = 'repeat(3, 1fr)';
-      gridR.style.width = '100%';
-      gridR.style.height = '100%';
-      dpad.appendChild(gridR);
-      document.body.appendChild(dpad);
-      function makeArrow(label) {
-        const b = document.createElement('button');
-        b.className = 'btn';
-        b.textContent = label;
-        b.style.position = 'relative';
-        b.style.transform = 'none';
-        b.style.left = 'auto';
-        b.style.right = 'auto';
-        b.style.bottom = 'auto';
-        b.style.width = '60px';
-        b.style.height = '60px';
-        b.style.borderRadius = '12px';
-        b.style.opacity = '0.9';
-        b.style.placeSelf = 'center';
-        return b;
-      }
-      const upBtn = makeArrow('▲');
-      const downBtn = makeArrow('▼');
-      const leftBtn = makeArrow('◀');
-      const rightBtn = makeArrow('▶');
-      upBtn.style.gridColumn = '2'; upBtn.style.gridRow = '1';
-      downBtn.style.gridColumn = '2'; downBtn.style.gridRow = '3';
-      leftBtn.style.gridColumn = '1'; leftBtn.style.gridRow = '2';
-      rightBtn.style.gridColumn = '3'; rightBtn.style.gridRow = '2';
-      gridR.appendChild(upBtn); gridR.appendChild(downBtn); gridR.appendChild(leftBtn); gridR.appendChild(rightBtn);
-      let holdTimer = null;
-      function moveActive(dx, dy) {
-        if (!activeObject) return;
-        const step = 0.15;
-        const px = activeObject.position.x + dx * step;
-        const py = activeObject.position.y + dy * step;
-        if (!anchorBase) anchorBase = activeObject.position.clone();
-        const limitX = 30, limitY = 30;
-        activeObject.position.x = Math.max(anchorBase.x - limitX, Math.min(anchorBase.x + limitX, px));
-        activeObject.position.y = Math.max(anchorBase.y - limitY, Math.min(anchorBase.y + limitY, py));
-      }
-      function onHold(fn) { fn(); holdTimer = setInterval(fn, 60); }
-      function endHold() { if (holdTimer) { clearInterval(holdTimer); holdTimer = null; } }
-      upBtn.addEventListener('pointerdown', () => onHold(() => moveActive(0, 1)));
-      downBtn.addEventListener('pointerdown', () => onHold(() => moveActive(0, -1)));
-      leftBtn.addEventListener('pointerdown', () => onHold(() => moveActive(-1, 0)));
-      rightBtn.addEventListener('pointerdown', () => onHold(() => moveActive(1, 0)));
-      [upBtn,downBtn,leftBtn,rightBtn].forEach(b => {
-        b.addEventListener('pointerup', endHold);
-        b.addEventListener('pointerleave', endHold);
-        b.addEventListener('pointercancel', endHold);
-      });
-      const menuBtn = document.createElement('button');
-      menuBtn.className = 'btn';
-      menuBtn.style.position = 'fixed';
-      menuBtn.style.top = '16px';
-      menuBtn.style.right = '16px';
-      menuBtn.style.transform = 'none';
-      menuBtn.style.width = '44px';
-      menuBtn.style.height = '44px';
-      menuBtn.style.borderRadius = '22px';
-      menuBtn.style.padding = '0';
-      menuBtn.style.display = 'grid';
-      menuBtn.style.placeItems = 'center';
-      menuBtn.textContent = '';
-      const bars = document.createElement('div');
-      bars.style.width = '22px';
-      bars.style.height = '16px';
-      bars.style.display = 'grid';
-      bars.style.gridTemplateRows = 'repeat(3, 1fr)';
-      bars.style.gap = '3px';
-      function makeBar() {
-        const d = document.createElement('div');
-        d.style.height = '2px';
-        d.style.background = 'rgba(255,255,255,0.9)';
-        d.style.borderRadius = '2px';
-        return d;
-      }
-      bars.appendChild(makeBar());
-      bars.appendChild(makeBar());
-      bars.appendChild(makeBar());
-      menuBtn.appendChild(bars);
-      menuBtn.style.zIndex = '2100';
-      document.body.appendChild(menuBtn);
-      const menu = document.createElement('div');
-      menu.style.position = 'fixed';
-      menu.style.top = '64px';
-      menu.style.right = '16px';
-      menu.style.background = 'rgba(20,20,20,0.9)';
-      menu.style.border = '1px solid rgba(255,255,255,0.25)';
-      menu.style.borderRadius = '10px';
-      menu.style.padding = '6px';
-      menu.style.display = 'none';
-      menu.style.zIndex = '2100';
-      function addMenuItem(title, handler){
-        const b = document.createElement('div');
-        b.textContent = title;
-        b.style.padding = '8px 10px';
-        b.style.cursor = 'pointer';
-        b.style.borderRadius = '6px';
-        b.addEventListener('click', () => { handler(); menu.style.display = 'none'; });
-        b.addEventListener('mouseenter', () => b.style.background = 'rgba(255,255,255,0.08)');
-        b.addEventListener('mouseleave', () => b.style.background = 'transparent');
-        menu.appendChild(b);
-      }
-      addMenuItem('Load 3D Aircraft', () => load3dAircraft());
-      addMenuItem('Reset', () => resetBtn.click());
-      addMenuItem('Start Camera', () => __startHandler && __startHandler());
-      // Removed Toggle Device Follow from menu
-      document.body.appendChild(menu);
-      menuBtn.addEventListener('click', () => {
-        menu.style.display = (menu.style.display === 'none' ? 'block' : 'none');
-      });
-      function layoutControls() {
-        const vw = window.innerWidth, vh = window.innerHeight;
-        const isPortrait = vh >= vw;
-        const base = Math.min(vw, vh);
-        const size = Math.max(96, Math.min(180, Math.floor(base * (isPortrait ? 0.36 : 0.28))));
-        const safeBottom = 16;
-        joy.style.width = size + 'px';
-        joy.style.height = size + 'px';
-        joy.style.borderRadius = Math.round(size/2) + 'px';
-        joy.style.left = '16px';
-        joy.style.bottom = safeBottom + 'px';
-        const knobSize = Math.round(size * 0.35);
-        knob.style.width = knobSize + 'px';
-        knob.style.height = knobSize + 'px';
-        knob.style.marginLeft = -Math.round(knobSize/2) + 'px';
-        knob.style.marginTop = -Math.round(knobSize/2) + 'px';
-        if (typeof dpadL !== 'undefined') {
-          dpadL.style.width = size + 'px';
-          dpadL.style.height = size + 'px';
-          dpadL.style.left = '16px';
-          dpadL.style.bottom = safeBottom + 'px';
-        }
-        joyR.style.width = size + 'px';
-        joyR.style.height = size + 'px';
-        joyR.style.borderRadius = Math.round(size/2) + 'px';
-        joyR.style.right = '16px';
-        joyR.style.bottom = safeBottom + 'px';
-        knobR.style.width = knobSize + 'px';
-        knobR.style.height = knobSize + 'px';
-        knobR.style.marginLeft = -Math.round(knobSize/2) + 'px';
-        knobR.style.marginTop = -Math.round(knobSize/2) + 'px';
-        const plusBottom = safeBottom + size + 160;
-        const minusBottom = safeBottom + size + 104;
-        zoomInBtn.style.right = '16px';
-        zoomOutBtn.style.right = '16px';
-        zoomInBtn.style.bottom = plusBottom + 'px';
-        zoomOutBtn.style.bottom = minusBottom + 'px';
-      }
+// ================= COMMON FACTORY =================
+function createDpad(positionSide = "right") {
+  const dpad = document.createElement("div");
+  dpad.className = "dpad";
+
+  if (positionSide === "left") {
+    dpad.style.left = "16px";
+    dpad.style.right = "auto";
+  } else {
+    dpad.style.right = "16px";
+    dpad.style.left = "auto";
+  }
+
+  const grid = document.createElement("div");
+  grid.className = "dpad-grid";
+  dpad.appendChild(grid);
+  document.body.appendChild(dpad);
+
+  function makeButton(col, row) {
+    const btn = document.createElement("button");
+    btn.className = "dpad-btn";
+    btn.style.gridColumn = col;
+    btn.style.gridRow = row;
+    grid.appendChild(btn);
+    return btn;
+  }
+
+  return {
+    up: makeButton("2", "1"),
+    down: makeButton("2", "3"),
+    left: makeButton("1", "2"),
+    right: makeButton("3", "2"),
+  };
+}
+
+// ================= ROTATION CONTROLLER (LEFT) =================
+const rotatePad = createDpad("left");
+
+function rotateStep(dx, dy) {
+  if (!activeObject) return;
+  const yaw = 0.04;
+  const pitch = 0.04;
+  activeObject.rotation.y += dx * yaw;
+  activeObject.rotation.x += dy * pitch;
+}
+
+let holdTimerRotate = null;
+
+function onHoldRotate(fn) {
+  fn();
+  holdTimerRotate = setInterval(fn, 60);
+}
+
+function endHoldRotate() {
+  if (holdTimerRotate) {
+    clearInterval(holdTimerRotate);
+    holdTimerRotate = null;
+  }
+}
+
+rotatePad.up.addEventListener("pointerdown", () =>
+  onHoldRotate(() => rotateStep(0, 1))
+);
+rotatePad.down.addEventListener("pointerdown", () =>
+  onHoldRotate(() => rotateStep(0, -1))
+);
+rotatePad.left.addEventListener("pointerdown", () =>
+  onHoldRotate(() => rotateStep(-1, 0))
+);
+rotatePad.right.addEventListener("pointerdown", () =>
+  onHoldRotate(() => rotateStep(1, 0))
+);
+
+Object.values(rotatePad).forEach((btn) => {
+  btn.addEventListener("pointerup", endHoldRotate);
+  btn.addEventListener("pointerleave", endHoldRotate);
+  btn.addEventListener("pointercancel", endHoldRotate);
+});
+
+// ================= MOVEMENT CONTROLLER (RIGHT) =================
+const movePad = createDpad("right");
+
+let holdTimerMove = null;
+
+function moveActive(dx, dy) {
+  if (!activeObject) return;
+
+  const step = 0.15;
+
+  if (!anchorBase) {
+    anchorBase = activeObject.position.clone();
+  }
+
+  const px = activeObject.position.x + dx * step;
+  const py = activeObject.position.y + dy * step;
+
+  const limitX = 30;
+  const limitY = 30;
+
+  activeObject.position.x = Math.max(
+    anchorBase.x - limitX,
+    Math.min(anchorBase.x + limitX, px)
+  );
+
+  activeObject.position.y = Math.max(
+    anchorBase.y - limitY,
+    Math.min(anchorBase.y + limitY, py)
+  );
+}
+
+function onHoldMove(fn) {
+  fn();
+  holdTimerMove = setInterval(fn, 60);
+}
+
+function endHoldMove() {
+  if (holdTimerMove) {
+    clearInterval(holdTimerMove);
+    holdTimerMove = null;
+  }
+}
+
+movePad.up.addEventListener("pointerdown", () =>
+  onHoldMove(() => moveActive(0, 1))
+);
+movePad.down.addEventListener("pointerdown", () =>
+  onHoldMove(() => moveActive(0, -1))
+);
+movePad.left.addEventListener("pointerdown", () =>
+  onHoldMove(() => moveActive(-1, 0))
+);
+movePad.right.addEventListener("pointerdown", () =>
+  onHoldMove(() => moveActive(1, 0))
+);
+
+Object.values(movePad).forEach((btn) => {
+  btn.addEventListener("pointerup", endHoldMove);
+  btn.addEventListener("pointerleave", endHoldMove);
+  btn.addEventListener("pointercancel", endHoldMove);
+});
+
+// ================= MENU BUTTON =================
+  const menuBtn = document.createElement("button");
+  menuBtn.className = "menu-btn";
+
+  const bars = document.createElement("div");
+  bars.className = "menu-bars";
+
+  function makeBar() {
+    const bar = document.createElement("div");
+    bar.className = "menu-bar";
+    return bar;
+  }
+
+  bars.append(makeBar(), makeBar(), makeBar());
+  menuBtn.appendChild(bars);
+  document.body.appendChild(menuBtn);
+
+  // ================= DROPDOWN =================
+  const menu = document.createElement("div");
+  menu.className = "menu-dropdown";
+  document.body.appendChild(menu);
+
+  // ================= MENU ITEMS =================
+  function addMenuItem(title, handler) {
+    const item = document.createElement("div");
+    item.className = "menu-item";
+    item.textContent = title;
+
+    item.addEventListener("click", (e) => {
+      e.stopPropagation();
+      handler();
+      closeMenu();
+    });
+
+    menu.appendChild(item);
+  }
+
+  addMenuItem("Load 3D Aircraft", () => load3dAircraft());
+  addMenuItem("Reset", () => resetBtn.click());
+  addMenuItem("Start Camera", () => __startHandler && __startHandler());
+  addMenuItem("Unshow Labels", () => setLabelsVisible(false));
+  addMenuItem("Show Labels", () => setLabelsVisible(true));
+
+  // ================= STATE =================
+  let isOpen = false;
+
+  function openMenu() {
+    isOpen = true;
+    menu.classList.add("show");
+    menuBtn.classList.add("active");
+  }
+
+  function closeMenu() {
+    isOpen = false;
+    menu.classList.remove("show");
+    menuBtn.classList.remove("active");
+  }
+
+  function toggleMenu(e) {
+    e.stopPropagation();
+    isOpen ? closeMenu() : openMenu();
+  }
+
+  menuBtn.addEventListener("click", toggleMenu);
+
+  // Prevent closing when clicking inside menu
+  menu.addEventListener("click", (e) => {
+    e.stopPropagation();
+  });
+
+  // Close when clicking outside
+  document.addEventListener("click", () => {
+    if (isOpen) closeMenu();
+  });
+
+// ================= AR / THREE FIX =================
+// If using Three.js / WebXR, enable this:
+if (typeof renderer !== "undefined" && renderer.domElement) {
+  renderer.domElement.style.pointerEvents = "none";
+}
+
+menu.style.pointerEvents = "auto";
+menuBtn.style.pointerEvents = "auto";
+
+      // =========== ZOOM IN/OUT BUTTONS ===========/
+function layoutControls() {
+  // ===== JOYSTICK CLASSES =====
+  joy.classList.add("joystick", "joy-left");
+  knob.classList.add("joystick-knob");
+
+  joyR.classList.add("joystick", "joy-right");
+  knobR.classList.add("joystick-knob");
+
+  // ===== CREATE TOP CONTROL WRAPPER (if not existing) =====
+  let topControls = document.querySelector(".top-controls");
+  if (!topControls) {
+    topControls = document.createElement("div");
+    topControls.className = "top-controls";
+    document.body.appendChild(topControls);
+  }
+
+  // ===== APPLY BUTTON STYLE =====
+  zoomInBtn.classList.add("control-btn");
+  zoomOutBtn.classList.add("control-btn");
+
+  // ===== MOVE ZOOM BUTTONS INTO TOP CONTROLS =====
+  if (!topControls.contains(zoomInBtn)) {
+    topControls.appendChild(zoomInBtn);
+  }
+
+  if (!topControls.contains(zoomOutBtn)) {
+    topControls.appendChild(zoomOutBtn);
+  }
+
+  // Remove old manual positioning
+  zoomInBtn.style.bottom = "";
+  zoomOutBtn.style.bottom = "";
+  zoomInBtn.style.top = "";
+  zoomOutBtn.style.top = "";
+  zoomInBtn.style.left = "";
+  zoomOutBtn.style.left = "";
+  zoomInBtn.style.right = "";
+  zoomOutBtn.style.right = "";
+  zoomInBtn.style.transform = "none";
+  zoomOutBtn.style.transform = "none";
+  zoomInBtn.style.position = "relative";
+  zoomOutBtn.style.position = "relative";
+}
+
       layoutControls();
       window.addEventListener('resize', layoutControls);
       window.addEventListener('orientationchange', layoutControls);
@@ -702,6 +968,23 @@
             activeObject.rotation.y += -dyaw * gainYaw;
             activeObject.rotation.x += -dpitch * gainPitch;
           }
+          // keep label size readable regardless of angle/distance
+          try {
+            const camPos = new THREE.Vector3(); cam.getWorldPosition(camPos);
+            const fov = (cam.isPerspectiveCamera ? cam.fov : 70);
+            for (const spr of labelSprites) {
+              if (!spr || !spr.userData || !spr.userData.texSize) continue;
+              const sp = new THREE.Vector3(); spr.getWorldPosition(sp);
+              const dist = camPos.distanceTo(sp);
+              const worldHeight = 2 * Math.tan(THREE.MathUtils.degToRad(fov * 0.5)) * dist;
+              const unitsPerPixel = worldHeight / window.innerHeight;
+              const desiredPx = 80;
+              const hWorld = Math.max(0.2, desiredPx * unitsPerPixel);
+              const aspect = spr.userData.texSize.w / spr.userData.texSize.h;
+              spr.scale.set(hWorld * aspect, hWorld, 1);
+              spr.material.rotation = 0;
+            }
+          } catch(_) {}
           if (activeObject) {
             const time = performance.now() * 0.001;
             const bo = Math.sin(time * __bounceSpeed) * __bounceAmp;
@@ -865,6 +1148,7 @@
           renderer.domElement.style.position = 'fixed';
           renderer.domElement.style.inset = '0';
           renderer.domElement.style.zIndex = '2';
+          //=========== 3D AIRCRAFT SPAWN DEFAULT POSITION =======//
           const dist = WORLD_SPAWN_DISTANCE;
           obj.position.set(0, 0, -dist);
           obj.rotation.y = Math.random() * Math.PI * 2;
@@ -880,18 +1164,47 @@
       placeBtn.addEventListener('click', placeAircraft);
       function makeLabel(text, color) {
         const canvas = document.createElement('canvas');
-        canvas.width = 256; canvas.height = 64;
+        canvas.width = 512; canvas.height = 128;
         const ctx = canvas.getContext('2d');
-        ctx.fillStyle = 'rgba(0,0,0,0.6)'; ctx.fillRect(0,0,256,64);
+        ctx.clearRect(0,0,canvas.width,canvas.height);
+        // background with rounded rect
+        const radius = 16;
+        ctx.fillStyle = 'rgba(0,0,0,0.85)';
+        ctx.beginPath();
+        ctx.moveTo(radius, 0);
+        ctx.lineTo(canvas.width - radius, 0);
+        ctx.quadraticCurveTo(canvas.width, 0, canvas.width, radius);
+        ctx.lineTo(canvas.width, canvas.height - radius);
+        ctx.quadraticCurveTo(canvas.width, canvas.height, canvas.width - radius, canvas.height);
+        ctx.lineTo(radius, canvas.height);
+        ctx.quadraticCurveTo(0, canvas.height, 0, canvas.height - radius);
+        ctx.lineTo(0, radius);
+        ctx.quadraticCurveTo(0, 0, radius, 0);
+        ctx.closePath();
+        ctx.fill();
+        // text
         ctx.fillStyle = color || '#ffffff';
-        ctx.font = '28px sans-serif';
-        ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
-        ctx.fillText(text, 128, 32);
+        ctx.font = 'bold 56px system-ui, -apple-system, Segoe UI, Roboto, Arial';
+        ctx.textAlign = 'center';
+        ctx.textBaseline = 'middle';
+        ctx.fillText(String(text).toUpperCase(), canvas.width/2, canvas.height/2);
+        // texture and sprite
         const tex = new THREE.CanvasTexture(canvas);
-        const mat = new THREE.SpriteMaterial({ map: tex, transparent: true });
+        const mat = new THREE.SpriteMaterial({ map: tex, transparent: true, depthTest: false, depthWrite: false, sizeAttenuation: false });
         const spr = new THREE.Sprite(mat);
-        spr.scale.set(0.8, 0.2, 1);
+        spr.userData.texSize = { w: canvas.width, h: canvas.height };
+        spr.renderOrder = 10000;
+        // initial scale; will be updated per-frame to keep readable
+        spr.scale.set(2.4, 0.6, 1);
+        labelSprites.push(spr);
         return spr;
+      }
+      function setLabelsVisible(show) {
+        try {
+          for (const s of labelSprites) if (s) s.visible = !!show;
+          for (const l of labelLines) if (l) l.visible = !!show;
+          for (const m of overlayMeshes) if (m) m.visible = !!show;
+        } catch (_) {}
       }
       async function load3dAircraft() {
         try {
@@ -959,12 +1272,6 @@
           const size = new THREE.Vector3(); box.getSize(size);
           const center = new THREE.Vector3(); box.getCenter(center);
           const labels = [
-            { text:'Ailerons', color:'#ff6b6b', offset:new THREE.Vector3(size.x*0.2, size.y*0.15, size.z*0.45) },
-            { text:'Flaps', color:'#ffd166', offset:new THREE.Vector3(-size.x*0.05, size.y*0.1, size.z*0.30) },
-            { text:'Spoilers', color:'#ffa500', offset:new THREE.Vector3(0, size.y*0.2, 0) },
-            { text:'Slats', color:'#d7dce3', offset:new THREE.Vector3(size.x*0.25, size.y*0.05, size.z*0.15) },
-            { text:'Elevators', color:'#00a3ff', offset:new THREE.Vector3(-size.x*0.35, size.y*0.15, -size.z*0.35) },
-            { text:'Rudder', color:'#59d97a', offset:new THREE.Vector3(-size.x*0.38, size.y*0.35, -size.z*0.38) },
           ];
           labels.forEach(({text,color,offset}) => {
             const spr = makeLabel(text, color);
@@ -973,6 +1280,9 @@
             if (spr.material) { spr.material.depthTest = false; spr.material.depthWrite = false; }
             model.add(spr);
           });
+      // default: show labels on load
+      setLabelsVisible(true);
+          // ================= DO NOT TOUCH THIS PLACEMENTS =================
           const blue = new THREE.MeshBasicMaterial({ color: 0x2ea7ff, transparent: true, opacity: 0.85, depthTest:false, depthWrite:false });
           const orange = new THREE.MeshBasicMaterial({ color: 0xffa429, transparent: true, opacity: 0.85, depthTest:false, depthWrite:false });
           function mkOverlay(w,h,d, mat){ const m = new THREE.Mesh(new THREE.BoxGeometry(w,h,d), mat); m.renderOrder = 9998; return m; }
@@ -994,7 +1304,43 @@
           //============ RUDDER ===============//
           const rudder = mkOverlay(size.x*0.06, size.y*0.20, size.z*0.02, blue);
           rudder.position.copy(center.clone().add(new THREE.Vector3(-size.x*0, size.y*0.30, -size.z*0.45)));
-          [slatR, flapR, spoilerR, aileronR, elevatorR, rudder].forEach(o => model.add(o));
+          [slatR, flapR, spoilerR, aileronR, elevatorR, rudder].forEach(o => { model.add(o); overlayMeshes.push(o); });
+          // Left wing overlays (mirrored) — placements left as symmetric copies
+          const slatL = mkOverlay(size.x*0.09, size.y*0.01, size.z*0.03, orange);
+          slatL.position.copy(center.clone().add(new THREE.Vector3(-size.x*0.2, size.y*-0.2, size.z*0.08)));
+          const flapL = mkOverlay(size.x*0.09, size.y*0.01, size.z*0.02, orange);
+          flapL.position.copy(center.clone().add(new THREE.Vector3(-size.x*0.2, size.y*-0.2, size.z*-0.02)));
+          const spoilerL = mkOverlay(size.x*0.09, size.y*0.01, size.z*0.02, blue);
+          spoilerL.position.copy(center.clone().add(new THREE.Vector3(-size.x*0.2, size.y*-0.2, size.z*-0.00)));
+          const aileronL = mkOverlay(size.x*0.09, size.y*0.01, size.z*0.02, blue);
+          aileronL.position.copy(center.clone().add(new THREE.Vector3(-size.x*0.4, size.y*-0.2, size.z*-0.06)));
+          [slatL, flapL, spoilerL, aileronL].forEach(o => { model.add(o); overlayMeshes.push(o); });
+          function addCallout(target, text, offset) {
+            const spr = makeLabel(String(text).toUpperCase(), '#ffffff');
+            spr.scale.set(1.1, 0.28, 1);
+            const labelPos = target.position.clone().add(offset || new THREE.Vector3(0, 0.22, 0));
+            spr.position.copy(labelPos);
+            spr.renderOrder = 10000;
+            if (spr.material) { spr.material.depthTest = false; spr.material.depthWrite = false; }
+            const geom = new THREE.BufferGeometry().setFromPoints([target.position.clone(), labelPos.clone()]);
+            const mat = new THREE.LineBasicMaterial({ color: 0xffffff, transparent: true, opacity: 0.95, depthTest: false, depthWrite: false });
+            const line = new THREE.Line(geom, mat);
+            line.renderOrder = 9999;
+            model.add(spr);
+            model.add(line);
+          labelLines.push(line);
+          }
+          addCallout(slatR, 'SLATS', new THREE.Vector3(-size.x*0.12, size.y*0.18, size.z*0.10));
+          addCallout(spoilerR, 'SPOILERS', new THREE.Vector3(-size.x*0.10, size.y*0.28, size.z*0.02));
+          addCallout(flapR, 'FLAPS', new THREE.Vector3(size.x*0.05, size.y*0.16, -size.z*0.08));
+          addCallout(aileronR, 'AILERONS', new THREE.Vector3(size.x*0.10, size.y*0.22, -size.z*0.02));
+          addCallout(elevatorR, 'ELEVATORS', new THREE.Vector3(-size.x*0.15, size.y*0.26, -size.z*0));
+          addCallout(rudder, 'RUDDER', new THREE.Vector3(-size.x*0.10, size.y*0.50, -size.z*0));
+          // Left wing callouts (mirrored)
+          addCallout(slatL, 'SLATS', new THREE.Vector3(size.x*0.12, size.y*0.18, size.z*0.10));
+          addCallout(spoilerL, 'SPOILERS', new THREE.Vector3(size.x*0.10, size.y*0.28, size.z*0.02));
+          addCallout(flapL, 'FLAPS', new THREE.Vector3(-size.x*0.05, size.y*0.16, -size.z*0.08));
+          addCallout(aileronL, 'AILERONS', new THREE.Vector3(-size.x*0.10, size.y*0.22, -size.z*0.02));
           scene.add(root);
           placed.push(root);
           activeObject = root;
@@ -1121,8 +1467,10 @@
   <body>
     <div id="app">
       <div id="overlay" class="overlay">
-        <div class="title">Markerless AR Aircraft</div>
-        <div class="hint">Move phone to detect a surface, tap to place</div>
+        <div class="title">
+          <img src="asset/airplane.png" alt="Aircraft Logo">
+          AR Aircraft
+        </div>      
       </div>
       <div id="unsupported" class="unsupported">
         <div>
