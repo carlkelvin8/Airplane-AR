@@ -309,21 +309,6 @@
         if (!activeObject) return;
         activeObject.rotation.y += dx * 0.004;
         activeObject.rotation.x += -dy * 0.004;
-        const px = activeObject.position.x + dx * 0.005;
-        const pz = activeObject.position.z + -dy * 0.005;
-        if (!anchorBase) anchorBase = activeObject.position.clone();
-        const offX = px - anchorBase.x;
-        const offZ = pz - anchorBase.z;
-        const r = Math.sqrt(offX*offX + offZ*offZ);
-        const limit = 10;
-        if (r > limit) {
-          const k = limit / r;
-          activeObject.position.x = anchorBase.x + offX * k;
-          activeObject.position.z = anchorBase.z + offZ * k;
-        } else {
-          activeObject.position.x = px;
-          activeObject.position.z = pz;
-        }
       }
       joy.addEventListener('pointerdown', (e) => { dragging = true; joy.setPointerCapture(e.pointerId); });
       joy.addEventListener('pointermove', (e) => {
@@ -392,6 +377,58 @@
         applyControlR(nx, ny);
       });
       joyR.addEventListener('pointerup', () => { draggingR = false; knobR.style.transform = 'translate(0,0)'; });
+      joy.style.display = 'block';
+      joyR.style.display = 'none';
+      const dpad = document.createElement('div');
+      dpad.style.position = 'fixed';
+      dpad.style.right = '16px';
+      dpad.style.bottom = '16px';
+      dpad.style.width = '160px';
+      dpad.style.height = '160px';
+      dpad.style.zIndex = '2000';
+      document.body.appendChild(dpad);
+      function makeArrow(label) {
+        const b = document.createElement('button');
+        b.className = 'btn';
+        b.textContent = label;
+        b.style.position = 'absolute';
+        b.style.width = '60px';
+        b.style.height = '60px';
+        b.style.borderRadius = '12px';
+        b.style.opacity = '0.9';
+        return b;
+      }
+      const upBtn = makeArrow('▲');
+      const downBtn = makeArrow('▼');
+      const leftBtn = makeArrow('◀');
+      const rightBtn = makeArrow('▶');
+      upBtn.style.left = '50%'; upBtn.style.transform = 'translateX(-50%)'; upBtn.style.top = '0';
+      downBtn.style.left = '50%'; downBtn.style.transform = 'translateX(-50%)'; downBtn.style.bottom = '0';
+      leftBtn.style.top = '50%'; leftBtn.style.transform = 'translateY(-50%)'; leftBtn.style.left = '0';
+      rightBtn.style.top = '50%'; rightBtn.style.transform = 'translateY(-50%)'; rightBtn.style.right = '0';
+      dpad.appendChild(upBtn); dpad.appendChild(downBtn); dpad.appendChild(leftBtn); dpad.appendChild(rightBtn);
+      let holdTimer = null;
+      function moveActive(dx, dy) {
+        if (!activeObject) return;
+        const step = 0.15;
+        const px = activeObject.position.x + dx * step;
+        const py = activeObject.position.y + dy * step;
+        if (!anchorBase) anchorBase = activeObject.position.clone();
+        const limitX = 30, limitY = 30;
+        activeObject.position.x = Math.max(anchorBase.x - limitX, Math.min(anchorBase.x + limitX, px));
+        activeObject.position.y = Math.max(anchorBase.y - limitY, Math.min(anchorBase.y + limitY, py));
+      }
+      function onHold(fn) { fn(); holdTimer = setInterval(fn, 60); }
+      function endHold() { if (holdTimer) { clearInterval(holdTimer); holdTimer = null; } }
+      upBtn.addEventListener('pointerdown', () => onHold(() => moveActive(0, 1)));
+      downBtn.addEventListener('pointerdown', () => onHold(() => moveActive(0, -1)));
+      leftBtn.addEventListener('pointerdown', () => onHold(() => moveActive(-1, 0)));
+      rightBtn.addEventListener('pointerdown', () => onHold(() => moveActive(1, 0)));
+      [upBtn,downBtn,leftBtn,rightBtn].forEach(b => {
+        b.addEventListener('pointerup', endHold);
+        b.addEventListener('pointerleave', endHold);
+        b.addEventListener('pointercancel', endHold);
+      });
       const menuBtn = document.createElement('button');
       menuBtn.className = 'btn';
       menuBtn.style.position = 'fixed';
@@ -447,8 +484,6 @@
       }
       addMenuItem('Load 3D Aircraft', () => load3dAircraft());
       addMenuItem('Reset', () => resetBtn.click());
-      addMenuItem('Open AR (Scene Viewer)', () => fallbackBtn.click());
-      addMenuItem('Place Aircraft', () => placeAircraft());
       addMenuItem('Start Camera', () => __startHandler && __startHandler());
       addMenuItem('Toggle Device Follow', () => { followDevice = !followDevice; });
       document.body.appendChild(menu);
@@ -811,6 +846,10 @@
           placed.push(root);
           activeObject = root;
           anchorBase = root.position.clone();
+          try {
+            for (let i = 0; i < 20; i++) adjustScale(0.9);
+            activeObject.rotation.y += 0.15 * 7;
+          } catch (_) {}
         } catch (e) {
           alert('Failed to load 3D aircraft. Using simple model instead.');
           placeAircraft();
