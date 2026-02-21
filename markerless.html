@@ -14,37 +14,37 @@
       .unsupported.active { display:flex }
       .btn { position:fixed; bottom:12px; left:50%; transform:translateX(-50%); background:rgba(255,255,255,.15); border:1px solid rgba(255,255,255,.3); color:#fff; padding:10px 14px; border-radius:10px; z-index:2000; cursor:pointer; pointer-events:auto }
       /* ===== TITLE STYLES ===== */
-.title {
-  background: linear-gradient(135deg, #0044cc, #00aaff); /* Gradient color (blue to light blue) */
-  color: white; /* Text color */
-  font-size: 1.2rem; /* Smaller font size */
-  font-weight: bold; /* Bold the text */
-  padding: 8px 12px; /* Further reduce padding */
-  text-align: center; /* Center the text */
-  border-radius: 8px; /* Rounded corners for the background */
-  font-family: 'Arial', sans-serif; /* Font family */
-  text-shadow: 2px 2px 6px rgba(0, 0, 0, 0.3); /* Adds a subtle shadow for readability */
-  margin: 8px; /* Reduce margin */
-  display: flex;
-  align-items: center;
-  justify-content: center;
-}
+      .title {
+        background: linear-gradient(135deg, #0044cc, #00aaff); /* Gradient color (blue to light blue) */
+        color: white; /* Text color */
+        font-size: 1.2rem; /* Smaller font size */
+        font-weight: bold; /* Bold the text */
+        padding: 8px 12px; /* Further reduce padding */
+        text-align: center; /* Center the text */
+        border-radius: 8px; /* Rounded corners for the background */
+        font-family: 'Arial', sans-serif; /* Font family */
+        text-shadow: 2px 2px 6px rgba(0, 0, 0, 0.3); /* Adds a subtle shadow for readability */
+        margin: 8px; /* Reduce margin */
+        display: flex;
+        align-items: center;
+        justify-content: center;
+      }
 
-.title img {
-  height: 20px; /* Smaller logo size */
-  margin-right: 4px; /* Reduce space between the logo and text */
-}
+      .title img {
+        height: 20px; /* Smaller logo size */
+        margin-right: 4px; /* Reduce space between the logo and text */
+      }
 
-/* Media Query for responsiveness */
-@media (max-width: 768px) {
-  .title {
-    font-size: 1rem; /* Even smaller font size for mobile devices */
-    padding: 6px 10px; /* Adjust padding for mobile */
-  }
-  .title img {
-    height: 18px; /* Even smaller logo size for mobile screens */
-  }
-}
+      /* Media Query for responsiveness */
+      @media (max-width: 768px) {
+        .title {
+          font-size: 1rem; /* Even smaller font size for mobile devices */
+          padding: 6px 10px; /* Adjust padding for mobile */
+        }
+        .title img {
+          height: 18px; /* Even smaller logo size for mobile screens */
+        }
+      }
           /* ===== D-PAD STYLES ===== */
     .dpad {
       position: fixed;
@@ -121,6 +121,18 @@
   gap: 10px;
   align-items: center;
   z-index: 2100;
+  }
+}
+@media (orientation: landscape) {
+  .top-controls {
+    position: fixed;
+    bottom: 12px;
+    left: 50%;
+    transform: translateX(-50%);
+    display: flex;
+    gap: 15px; /* Adjust gap for landscape */
+    align-items: center;
+    z-index: 2100;
   }
 }
 
@@ -297,117 +309,20 @@
       reticle.visible = false;
       scene.add(reticle);
 
-      function makeAirplane() {
-        const group = new THREE.Group();
-        const bodyMat = new THREE.MeshPhysicalMaterial({ color: 0xf5f7fb, metalness: 0.6, roughness: 0.25, clearcoat: 0.6, clearcoatRoughness: 0.2 });
-        const metalMat = new THREE.MeshPhysicalMaterial({ color: 0x777777, metalness: 0.9, roughness: 0.2 });
-        const glassMat = new THREE.MeshPhysicalMaterial({ color: 0x99b2d4, metalness: 0, roughness: 0.05, transmission: 0.6, transparent: true });
-        if (scene.environment) { bodyMat.envMap = scene.environment; metalMat.envMap = scene.environment; glassMat.envMap = scene.environment; }
-        const len = 6;
-        const r = 0.6;
-        const pts = [
-          new THREE.Vector2(0, -len*0.5),
-          new THREE.Vector2(r*0.2, -len*0.45),
-          new THREE.Vector2(r*0.45, -len*0.3),
-          new THREE.Vector2(r*0.6, -len*0.1),
-          new THREE.Vector2(r*0.65, 0),
-          new THREE.Vector2(r*0.6, len*0.1),
-          new THREE.Vector2(r*0.5, len*0.3),
-          new THREE.Vector2(r*0.35, len*0.4),
-          new THREE.Vector2(r*0.15, len*0.47),
-          new THREE.Vector2(0, len*0.5)
-        ];
-        const fuselageGeo = new THREE.LatheGeometry(pts, 64);
-        const fuselage = new THREE.Mesh(fuselageGeo, bodyMat);
-        group.add(fuselage);
-        const wingThickness = 0.12;
-        const rootChord = 2.2;
-        const tipChord = 0.9;
-        const semiSpan = 5;
-        const wingShape = new THREE.Shape();
-        wingShape.moveTo(0, 0);
-        wingShape.lineTo(semiSpan, (tipChord - rootChord) * 0.5);
-        wingShape.lineTo(semiSpan, (tipChord - rootChord) * 0.5 + tipChord);
-        wingShape.lineTo(0, rootChord);
-        const wingExtrude = new THREE.ExtrudeGeometry(wingShape, { depth: wingThickness, bevelEnabled: false, steps: 1 });
-        const wingL = new THREE.Mesh(wingExtrude, bodyMat);
-        wingL.position.set(0, -0.05, 0);
-        wingL.rotation.x = Math.PI / 2;
-        wingL.rotation.z = Math.PI / 180 * 5;
-        const wingR = wingL.clone();
-        wingR.scale.x = -1;
-        group.add(wingL);
-        group.add(wingR);
-        const engRadius = 0.35;
-        const engLen = 1;
-        const engineL = new THREE.Mesh(new THREE.CylinderGeometry(engRadius, engRadius, engLen, 48), metalMat);
-        engineL.rotation.x = Math.PI / 2;
-        engineL.position.set(-semiSpan*0.5, -0.45, 0.9);
-        const engineR = engineL.clone();
-        engineR.position.x = semiSpan*0.5;
-        group.add(engineL);
-        group.add(engineR);
-        const vTailShape = new THREE.Shape();
-        vTailShape.moveTo(0,0);
-        vTailShape.lineTo(0.05,0.0);
-        vTailShape.lineTo(0.0,0.9);
-        vTailShape.lineTo(-0.25,0.85);
-        const vTail = new THREE.Mesh(new THREE.ExtrudeGeometry(vTailShape, { depth: 0.08, bevelEnabled: false }), bodyMat);
-        vTail.rotation.y = Math.PI / 2;
-        vTail.position.set(0, 0, -len*0.4);
-        group.add(vTail);
-        const hStabShape = new THREE.Shape();
-        hStabShape.moveTo(0,0);
-        hStabShape.lineTo(1.2, -0.25);
-        hStabShape.lineTo(1.2, 0.25);
-        hStabShape.lineTo(0, 0.45);
-        const hStabL = new THREE.Mesh(new THREE.ExtrudeGeometry(hStabShape, { depth: 0.06, bevelEnabled: false }), bodyMat);
-        hStabL.rotation.x = Math.PI / 2;
-        hStabL.position.set(-0.9, 0.05, -len*0.38);
-        const hStabR = hStabL.clone();
-        hStabR.scale.x = -1;
-        group.add(hStabL);
-        group.add(hStabR);
-        const blue = new THREE.MeshBasicMaterial({ color: 0x2ea7ff, transparent: true, opacity: 0.85 });
-        const orange = new THREE.MeshBasicMaterial({ color: 0xffa429, transparent: true, opacity: 0.85 });
-        const slatL = new THREE.Mesh(new THREE.BoxGeometry(2.2, 0.04, 0.18), orange);
-        slatL.position.set(-semiSpan*0.55, 0.08, 0.25); slatL.rotation.x = Math.PI/2; group.add(slatL);
-        const flapL = new THREE.Mesh(new THREE.BoxGeometry(1.8, 0.04, 0.22), orange);
-        flapL.position.set(-semiSpan*0.5, 0.06, 0.55); flapL.rotation.x = Math.PI/2; group.add(flapL);
-        const spoilerL = new THREE.Mesh(new THREE.BoxGeometry(1.1, 0.02, 0.18), blue);
-        spoilerL.position.set(-semiSpan*0.35, 0.18, 0.4); spoilerL.rotation.x = Math.PI/2; group.add(spoilerL);
-        const aileronL = new THREE.Mesh(new THREE.BoxGeometry(1.0, 0.04, 0.22), blue);
-        aileronL.position.set(-semiSpan*0.82, 0.06, 0.58); aileronL.rotation.x = Math.PI/2; group.add(aileronL);
-        const slatR = slatL.clone(); slatR.position.x = semiSpan*0.55; group.add(slatR);
-        const flapR = flapL.clone(); flapR.position.x = semiSpan*0.5; group.add(flapR);
-        const spoilerR = spoilerL.clone(); spoilerR.position.x = semiSpan*0.35; group.add(spoilerR);
-        const aileronR = aileronL.clone(); aileronR.position.x = semiSpan*0.82; group.add(aileronR);
-        const rudder = new THREE.Mesh(new THREE.BoxGeometry(0.42, 0.80, 0.04), blue);
-        rudder.position.set(0.06, 0.42, -len*0.40 + 0.02); rudder.rotation.y = Math.PI/2; group.add(rudder);
-        const elevatorL = new THREE.Mesh(new THREE.BoxGeometry(0.65, 0.04, 0.20), blue);
-        elevatorL.position.set(-0.85, 0.10, -len*0.37); elevatorL.rotation.x = Math.PI/2; group.add(elevatorL);
-        const elevatorR = elevatorL.clone(); elevatorR.position.x = 0.85; group.add(elevatorR);
-        const lblAileron = makeLabel('Ailerons', '#2ea7ff'); lblAileron.position.copy(aileronR.position.clone().add(new THREE.Vector3(0.2,0.25,0.2))); group.add(lblAileron);
-        const lblFlaps = makeLabel('Flaps', '#ff8c2a'); lblFlaps.position.copy(flapR.position.clone().add(new THREE.Vector3(0.0,0.22,0.0))); group.add(lblFlaps);
-        const lblSpoilers = makeLabel('Spoilers', '#2ea7ff'); lblSpoilers.position.copy(spoilerR.position.clone().add(new THREE.Vector3(0.0,0.25,0.0))); group.add(lblSpoilers);
-        const lblSlats = makeLabel('Slats', '#ff8c2a'); lblSlats.position.copy(slatR.position.clone().add(new THREE.Vector3(0.0,0.22,0.0))); group.add(lblSlats);
-        const lblElev = makeLabel('Elevators', '#2ea7ff'); lblElev.position.copy(elevatorR.position.clone().add(new THREE.Vector3(0.0,0.25,0.0))); group.add(lblElev);
-        const lblRud = makeLabel('Rudder', '#2ea7ff'); lblRud.position.copy(rudder.position.clone().add(new THREE.Vector3(0.0,0.25,0.0))); group.add(lblRud);
-        const cockpit = new THREE.Mesh(new THREE.SphereGeometry(r*0.45, 32, 16, 0, Math.PI), glassMat);
-        cockpit.rotation.y = Math.PI;
-        cockpit.position.set(0, 0.1, len*0.38);
-        group.add(cockpit);
-        const bb = new THREE.Box3().setFromObject(group);
-        const minY = bb.min.y;
-        group.position.y += -minY;
-        return group;
-      }
+      // [Removed] Procedural placeholder airplane — keep only imported 3D aircraft
 
       let nonXrControls = null;
 
-      const WORLD_SPAWN_DISTANCE = 12;
+      const WORLD_SPAWN_DISTANCE = 8;
       const MODEL_SCALE = 1;
       const DESIRED_LENGTH_M = 64;
+      //======== DEFAULT ROTATE POSITION AIRCRAFT ======//
+      // Up/Down rotation (pitch): X & Y
+      const SPAWN_ROT_UPDOWN_X = 0.5;
+      const SPAWN_ROT_UPDOWN_Y = -0.25;
+      // Left/Right rotation (yaw): X & Y
+      const SPAWN_ROT_LEFTRIGHT_X = 0.00;
+      const SPAWN_ROT_LEFTRIGHT_Y = 0.00;
       const button = null;
       const startCamBtn = document.getElementById('startCam');
       let __startHandler = null;
@@ -435,19 +350,19 @@
       resetBtn.style.bottom = '204px';
       resetBtn.textContent = 'Reset';
       document.body.appendChild(resetBtn);
-const zoomInBtn = document.createElement('button');
-zoomInBtn.className = 'btn';
-zoomInBtn.style.top = '8px';  // Move the button up (adjust as needed)
-zoomInBtn.style.left = '16px';  // Keep the button on the left
-zoomInBtn.style.width = '30px';
-zoomInBtn.style.height = '30px';
-zoomInBtn.style.borderRadius = '22px';
-zoomInBtn.style.transform = 'none';
-zoomInBtn.style.display = 'flex';
-zoomInBtn.style.justifyContent = 'center';
-zoomInBtn.style.alignItems = 'center';
-zoomInBtn.textContent = '+';
-document.body.appendChild(zoomInBtn);
+      const zoomInBtn = document.createElement('button');
+      zoomInBtn.className = 'btn';
+      zoomInBtn.style.top = '8px';  // Move the button up (adjust as needed)
+      zoomInBtn.style.left = '16px';  // Keep the button on the left
+      zoomInBtn.style.width = '30px';
+      zoomInBtn.style.height = '30px';
+      zoomInBtn.style.borderRadius = '22px';
+      zoomInBtn.style.transform = 'none';
+      zoomInBtn.style.display = 'flex';
+      zoomInBtn.style.justifyContent = 'center';
+      zoomInBtn.style.alignItems = 'center';
+      zoomInBtn.textContent = '+';
+      document.body.appendChild(zoomInBtn);
 
 const zoomOutBtn = document.createElement('button');
 zoomOutBtn.className = 'btn';
@@ -893,30 +808,18 @@ function layoutControls() {
 
       const controller = renderer.xr.getController(0);
       controller.addEventListener('select', async () => {
-        const obj = makeAirplane();
-        if (reticle.visible) {
-          if (lastHitResult && xrAnchorsSupported) {
-            try {
-              const anchor = await lastHitResult.createAnchor();
-              xrAnchors.push({ anchor, object: obj });
-              scene.add(obj);
-            } catch (e) {
-              obj.position.copy(reticle.position);
-              scene.add(obj);
-            }
+        try {
+          if (reticle.visible) {
+            window.__pendingSpawnPosition = reticle.position.clone();
           } else {
-            obj.position.copy(reticle.position);
-            scene.add(obj);
+            const xrCam = renderer.xr.getCamera();
+            const dir = new THREE.Vector3(); xrCam.getWorldDirection(dir);
+            const pos = new THREE.Vector3(); xrCam.getWorldPosition(pos);
+            window.__pendingSpawnPosition = pos.add(dir.multiplyScalar(WORLD_SPAWN_DISTANCE));
           }
-        } else {
-          const xrCam = renderer.xr.getCamera();
-          const dir = new THREE.Vector3(); xrCam.getWorldDirection(dir);
-          const pos = new THREE.Vector3(); xrCam.getWorldPosition(pos);
-          obj.position.copy(pos.add(dir.multiplyScalar(WORLD_SPAWN_DISTANCE)));
-          scene.add(obj);
-        }
-        activeObject = obj;
-        anchorBase = obj.position.clone();
+          await load3dAircraft();
+          window.__pendingSpawnPosition = null;
+        } catch (_) {}
       });
       scene.add(controller);
 
@@ -1114,7 +1017,12 @@ function layoutControls() {
           const pos = new THREE.Vector3(); xrCam.getWorldPosition(pos);
           const dist = WORLD_SPAWN_DISTANCE;
           obj.position.copy(pos.add(dir.multiplyScalar(dist)));
-          obj.rotation.y = Math.random() * Math.PI * 2;
+          //=========== DEFAULT ROTATION (XR immediate spawn) — adjust here =======//
+          // yaw (Y) = left/right, pitch (X) = up/down, roll (Z) = tilt
+          obj.rotation.x += SPAWN_ROT_UPDOWN_X;
+          obj.rotation.y += SPAWN_ROT_UPDOWN_Y;
+          obj.rotation.x += SPAWN_ROT_LEFTRIGHT_X;
+          obj.rotation.y += SPAWN_ROT_LEFTRIGHT_Y;
         } else {
           if (!window._previewStream) {
             // if preview is not running, try to start it quietly
@@ -1151,7 +1059,12 @@ function layoutControls() {
           //=========== 3D AIRCRAFT SPAWN DEFAULT POSITION =======//
           const dist = WORLD_SPAWN_DISTANCE;
           obj.position.set(0, 0, -dist);
-          obj.rotation.y = Math.random() * Math.PI * 2;
+          //=========== DEFAULT ROTATION (non-XR preview spawn) — adjust here =======//
+          // yaw (Y) = left/right, pitch (X) = up/down, roll (Z) = tilt
+          obj.rotation.x += SPAWN_ROT_UPDOWN_X;
+          obj.rotation.y += SPAWN_ROT_UPDOWN_Y;
+          obj.rotation.x += SPAWN_ROT_LEFTRIGHT_X;
+          obj.rotation.y += SPAWN_ROT_LEFTRIGHT_Y;
         }
         obj.scale.set(1.0,1.0,1.0);
         scene.add(obj);
@@ -1161,7 +1074,7 @@ function layoutControls() {
         anchorBase = obj.position.clone();
         placeCount++;
       }
-      placeBtn.addEventListener('click', placeAircraft);
+      placeBtn.addEventListener('click', () => { try { load3dAircraft(); } catch(_){} });
       function makeLabel(text, color) {
         const canvas = document.createElement('canvas');
         canvas.width = 512; canvas.height = 128;
@@ -1247,12 +1160,8 @@ function layoutControls() {
           const scaleFactor = DESIRED_LENGTH_M / (currentLength || 1);
           root.scale.set(scaleFactor, scaleFactor, scaleFactor);
           // Position: replace last simple if exists; else in front of camera
-          if (lastPlacedSimple) {
-            root.position.copy(lastPlacedSimple.position);
-            root.rotation.copy(lastPlacedSimple.rotation);
-            scene.remove(lastPlacedSimple);
-            placed.splice(placed.indexOf(lastPlacedSimple), 1);
-            lastPlacedSimple = null;
+          if (window.__pendingSpawnPosition) {
+            root.position.copy(window.__pendingSpawnPosition);
           } else {
             if (renderer.xr.isPresenting) {
               const xrCam = renderer.xr.getCamera();
@@ -1347,11 +1256,15 @@ function layoutControls() {
           anchorBase = root.position.clone();
           try {
             for (let i = 0; i < 20; i++) adjustScale(0.9);
-            activeObject.rotation.y += 0.15 * 7;
+            //=========== DEFAULT ROTATION FOR 3D AIRCRAFT (after load) =======//
+            // no roll tilt on spawn
+            activeObject.rotation.x += SPAWN_ROT_UPDOWN_X;
+            activeObject.rotation.y += SPAWN_ROT_UPDOWN_Y;
+            activeObject.rotation.x += SPAWN_ROT_LEFTRIGHT_X;
+            activeObject.rotation.y += SPAWN_ROT_LEFTRIGHT_Y;
           } catch (_) {}
         } catch (e) {
-          alert('Failed to load 3D aircraft. Using simple model instead.');
-          placeAircraft();
+          alert('Failed to load 3D aircraft.');
         }
       }
       load3dBtn.addEventListener('click', load3dAircraft);
@@ -1447,7 +1360,7 @@ function layoutControls() {
             const d = Math.hypot(arr[0].x - arr[1].x, arr[0].y - arr[1].y);
             if (lastPinch) {
               const delta = d - lastPinch;
-              const s = Math.max(0.5, Math.min(4, activeObject.scale.x + delta * 0.002));
+              const s = Math.max(0.5, Math.min(4, activeObject.scale.x + delta * 0.200));
               activeObject.scale.set(s, s, s);
             }
             lastPinch = d;
@@ -1553,82 +1466,7 @@ function layoutControls() {
         var dir = new THREE.DirectionalLight(0xffffff, 0.9);
         dir.position.set(1,2,1);
         scene.add(dir);
-        function makeAirplane() {
-          var group = new THREE.Group();
-          var bodyMat = new THREE.MeshPhysicalMaterial({ color: 0xf5f7fb, metalness: 0.6, roughness: 0.25, clearcoat: 0.6, clearcoatRoughness: 0.2 });
-          var metalMat = new THREE.MeshPhysicalMaterial({ color: 0x777777, metalness: 0.9, roughness: 0.2 });
-          var glassMat = new THREE.MeshPhysicalMaterial({ color: 0x99b2d4, metalness: 0, roughness: 0.05, transmission: 0.6, transparent: true });
-          var len = 6;
-          var r = 0.6;
-          var pts = [
-            new THREE.Vector2(0, -len*0.5),
-            new THREE.Vector2(r*0.2, -len*0.45),
-            new THREE.Vector2(r*0.45, -len*0.3),
-            new THREE.Vector2(r*0.6, -len*0.1),
-            new THREE.Vector2(r*0.65, 0),
-            new THREE.Vector2(r*0.6, len*0.1),
-            new THREE.Vector2(r*0.5, len*0.3),
-            new THREE.Vector2(r*0.35, len*0.4),
-            new THREE.Vector2(r*0.15, len*0.47),
-            new THREE.Vector2(0, len*0.5)
-          ];
-          var fuselage = new THREE.Mesh(new THREE.LatheGeometry(pts, 64), bodyMat);
-          group.add(fuselage);
-          var wingThickness = 0.12;
-          var rootChord = 2.2;
-          var tipChord = 0.9;
-          var semiSpan = 5;
-          var wingShape = new THREE.Shape();
-          wingShape.moveTo(0, 0);
-          wingShape.lineTo(semiSpan, (tipChord - rootChord) * 0.5);
-          wingShape.lineTo(semiSpan, (tipChord - rootChord) * 0.5 + tipChord);
-          wingShape.lineTo(0, rootChord);
-          var wingExtrude = new THREE.ExtrudeGeometry(wingShape, { depth: wingThickness, bevelEnabled: false, steps: 1 });
-          var wingL = new THREE.Mesh(wingExtrude, bodyMat);
-          wingL.position.set(0, -0.05, 0);
-          wingL.rotation.x = Math.PI / 2;
-          wingL.rotation.z = Math.PI / 180 * 5;
-          var wingR = wingL.clone();
-          wingR.scale.x = -1;
-          group.add(wingL);
-          group.add(wingR);
-          var engineL = new THREE.Mesh(new THREE.CylinderGeometry(0.35, 0.35, 1, 48), metalMat);
-          engineL.rotation.x = Math.PI / 2;
-          engineL.position.set(-semiSpan*0.5, -0.45, 0.9);
-          var engineR = engineL.clone();
-          engineR.position.x = semiSpan*0.5;
-          group.add(engineL);
-          group.add(engineR);
-          var vTailShape = new THREE.Shape();
-          vTailShape.moveTo(0,0);
-          vTailShape.lineTo(0.05,0.0);
-          vTailShape.lineTo(0.0,0.9);
-          vTailShape.lineTo(-0.25,0.85);
-          var vTail = new THREE.Mesh(new THREE.ExtrudeGeometry(vTailShape, { depth: 0.08, bevelEnabled: false }), bodyMat);
-          vTail.rotation.y = Math.PI / 2;
-          vTail.position.set(0, 0, -len*0.4);
-          group.add(vTail);
-          var hStabShape = new THREE.Shape();
-          hStabShape.moveTo(0,0);
-          hStabShape.lineTo(1.2, -0.25);
-          hStabShape.lineTo(1.2, 0.25);
-          hStabShape.lineTo(0, 0.45);
-          var hStabL = new THREE.Mesh(new THREE.ExtrudeGeometry(hStabShape, { depth: 0.06, bevelEnabled: false }), bodyMat);
-          hStabL.rotation.x = Math.PI / 2;
-          hStabL.position.set(-0.9, 0.05, -len*0.38);
-          var hStabR = hStabL.clone();
-          hStabR.scale.x = -1;
-          group.add(hStabL);
-          group.add(hStabR);
-          var cockpit = new THREE.Mesh(new THREE.SphereGeometry(r*0.45, 32, 16, 0, Math.PI), glassMat);
-          cockpit.rotation.y = Math.PI;
-          cockpit.position.set(0, 0.1, len*0.38);
-          group.add(cockpit);
-          var bb = new THREE.Box3().setFromObject(group);
-          var minY = bb.min.y;
-          group.position.y += -minY;
-          return group;
-        }
+        // [Removed] duplicate procedural airplane function
         var placed = [];
         var placeCount = 0;
         var lastPlacedSimple = null;
