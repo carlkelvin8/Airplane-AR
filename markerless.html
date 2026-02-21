@@ -485,7 +485,15 @@
       addMenuItem('Load 3D Aircraft', () => load3dAircraft());
       addMenuItem('Reset', () => resetBtn.click());
       addMenuItem('Start Camera', () => __startHandler && __startHandler());
-      addMenuItem('Toggle Device Follow', () => { followDevice = !followDevice; });
+      addMenuItem('Toggle Device Follow', () => { 
+        followDevice = !followDevice; 
+        leftAnalogMode = followDevice ? true : leftAnalogMode;
+        if (typeof joy !== 'undefined' && typeof dpadL !== 'undefined') {
+          joy.style.display = leftAnalogMode ? 'block' : 'none';
+          dpadL.style.display = leftAnalogMode ? 'none' : 'block';
+        }
+        layoutControls();
+      });
       document.body.appendChild(menu);
       menuBtn.addEventListener('click', () => {
         menu.style.display = (menu.style.display === 'none' ? 'block' : 'none');
@@ -528,16 +536,7 @@
       try {
         window.addEventListener('devicemotion', (e) => {
           if (!followDevice) return;
-          const a = e.accelerationIncludingGravity || e.acceleration || { x:0, y:0, z:0 };
-          cameraTargetPos.x = THREE.MathUtils.clamp(cameraTargetPos.x + (a.x || 0) * 0.002, -0.5, 0.5);
-          cameraTargetPos.y = THREE.MathUtils.clamp(cameraTargetPos.y + (a.y || 0) * 0.002, -0.5, 0.5);
-          cameraTargetPos.z = THREE.MathUtils.clamp(cameraTargetPos.z, -0.2, 0.2);
-          if (leftAnalogMode && knob) {
-            const kMax = 60;
-            const dx = THREE.MathUtils.clamp(cameraTargetPos.x * 180, -kMax, kMax);
-            const dy = THREE.MathUtils.clamp(-cameraTargetPos.y * 180, -kMax, kMax);
-            knob.style.transform = `translate(${dx}px, ${dy}px)`;
-          }
+          // Rotate-only behavior: position stays fixed; visual analog feedback happens in render loop
         }, { passive: true });
       } catch (_) {}
 
