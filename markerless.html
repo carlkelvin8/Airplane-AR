@@ -515,8 +515,8 @@
         knobR.style.height = knobSize + 'px';
         knobR.style.marginLeft = -Math.round(knobSize/2) + 'px';
         knobR.style.marginTop = -Math.round(knobSize/2) + 'px';
-        const plusBottom = safeBottom + size + 72;
-        const minusBottom = safeBottom + size + 16;
+        const plusBottom = safeBottom + size + 160;
+        const minusBottom = safeBottom + size + 104;
         zoomInBtn.style.right = '16px';
         zoomOutBtn.style.right = '16px';
         zoomInBtn.style.bottom = plusBottom + 'px';
@@ -532,6 +532,12 @@
           cameraTargetPos.x = THREE.MathUtils.clamp(cameraTargetPos.x + (a.x || 0) * 0.002, -0.5, 0.5);
           cameraTargetPos.y = THREE.MathUtils.clamp(cameraTargetPos.y + (a.y || 0) * 0.002, -0.5, 0.5);
           cameraTargetPos.z = THREE.MathUtils.clamp(cameraTargetPos.z, -0.2, 0.2);
+          if (leftAnalogMode && knob) {
+            const kMax = 60;
+            const dx = THREE.MathUtils.clamp(cameraTargetPos.x * 180, -kMax, kMax);
+            const dy = THREE.MathUtils.clamp(-cameraTargetPos.y * 180, -kMax, kMax);
+            knob.style.transform = `translate(${dx}px, ${dy}px)`;
+          }
         }, { passive: true });
       } catch (_) {}
 
@@ -570,6 +576,9 @@
       });
       scene.add(controller);
 
+      let __bouncePrev = 0;
+      const __bounceSpeed = 2.2;
+      const __bounceAmp = 0.06;
       renderer.setAnimationLoop((t, frame) => {
         if (renderer.xr.isPresenting) {
           if (xrHitTestSource && frame) {
@@ -597,12 +606,24 @@
               }
             }
           }
+          if (activeObject) {
+            const time = performance.now() * 0.001;
+            const bo = Math.sin(time * __bounceSpeed) * __bounceAmp;
+            activeObject.position.y += (bo - __bouncePrev);
+            __bouncePrev = bo;
+          }
           renderer.render(scene, camera);
         } else {
           if (nonXrControls) nonXrControls.update();
           if (followDevice) {
             camera.quaternion.slerp(virtualCam.quaternion, 0.15);
             camera.position.lerp(cameraTargetPos, 0.1);
+          }
+          if (activeObject) {
+            const time = performance.now() * 0.001;
+            const bo = Math.sin(time * __bounceSpeed) * __bounceAmp;
+            activeObject.position.y += (bo - __bouncePrev);
+            __bouncePrev = bo;
           }
           renderer.render(scene, camera);
         }
