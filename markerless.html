@@ -13,6 +13,9 @@
       .unsupported { position:absolute; inset:0; display:none; align-items:center; justify-content:center; text-align:center; padding:24px; background:#0a0a0a }
       .unsupported.active { display:flex }
       .btn { position:fixed; bottom:12px; left:50%; transform:translateX(-50%); background:rgba(255,255,255,.15); border:1px solid rgba(255,255,255,.3); color:#fff; padding:10px 14px; border-radius:10px; z-index:2000; cursor:pointer; pointer-events:auto }
+      /* ===== FULL START OVERLAY ===== */
+      #startOverlay { position:fixed; inset:0; display:flex; align-items:center; justify-content:center; background:rgba(0,0,0,0.92); z-index:3000 }
+      .start-btn { cursor:pointer; pointer-events:auto; padding:14px 18px; border:none }
       /* ===== TITLE STYLES ===== */
       .title {
         background: linear-gradient(135deg, #0044cc, #00aaff); /* Gradient color (blue to light blue) */
@@ -1277,15 +1280,7 @@ function layoutControls() {
         try { load3dAircraft(); } catch(e){}
       };
       // Only load after camera starts
-      if (!window._previewStream) {
-        // Auto start camera, then auto load 3D
-        setTimeout(async () => {
-          try {
-            await window.__startCam();
-            if (window.__autoPlaceAfterCamera) window.__autoPlaceAfterCamera();
-          } catch(_) {}
-        }, 200);
-      }
+      // Waiting for user to press "Start AR Aircraft" before starting camera
       window.__moduleReady = true;
       resetBtn.addEventListener('click', () => {
         placed.forEach(o => scene.remove(o));
@@ -1396,6 +1391,9 @@ function layoutControls() {
           AR Aircraft
         </div>      
       </div>
+      <div id="startOverlay">
+        <button id="startArBtn" class="title start-btn">Start AR Aircraft</button>
+      </div>
       <div id="unsupported" class="unsupported">
         <div>
           <h2>Markerless AR not available</h2>
@@ -1444,6 +1442,17 @@ function layoutControls() {
           }
         }
         window.__startCam = window.__startCam || startCameraFallback;
+        // Start overlay button wiring: starts camera then hides overlay and loads 3D
+        var startArBtn = document.getElementById('startArBtn');
+        var startOverlay = document.getElementById('startOverlay');
+        if (startArBtn) startArBtn.addEventListener('click', function(){
+          window.__startRequested = true;
+          startCameraFallback();
+          if (startOverlay) startOverlay.style.display = 'none';
+          setTimeout(function(){
+            if (window.__autoPlaceAfterCamera) window.__autoPlaceAfterCamera();
+          }, 200);
+        });
         var btn = document.getElementById('startCam');
         if (btn) btn.addEventListener('click', function(){
           window.__startRequested = true;
@@ -1717,13 +1726,6 @@ function layoutControls() {
         }
         loop();
         window.__autoPlaceAfterCamera = window.__autoPlaceAfterCamera || function(){ try{ load3d() }catch(e){} };
-        // Auto start camera then auto load 3D
-        setTimeout(async function(){
-          try {
-            if (!window._previewStream) await window.__startCam();
-            if (window.__autoPlaceAfterCamera) window.__autoPlaceAfterCamera();
-          } catch(e) {}
-        }, 200);
         (function addGesture(){
           var pointers = {};
           var lastPinch = 0;
