@@ -4,6 +4,7 @@
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
     <title>AR Aircraft</title>
+    <link rel="icon" type="image/x-icon" href="asset/favicon.ico">
     <style>
       html, body { margin:0; height:100%; background:#000; color:#fff; font-family:system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial, sans-serif }
       #app { position:fixed; inset:0 }
@@ -319,6 +320,7 @@
       const WORLD_SPAWN_DISTANCE = 8;
       const MODEL_SCALE = 1;
       const DESIRED_LENGTH_M = 64;
+      const AIRCRAFT_COLOR = 0xE1F1FD;
       //======== DEFAULT ROTATE POSITION AIRCRAFT ======//
       // Up/Down rotation (pitch): X & Y
       const SPAWN_ROT_UPDOWN_X = 0.5;
@@ -1147,7 +1149,11 @@ function layoutControls() {
           model.traverse(o => { 
             if (o.isMesh) { 
               o.castShadow = true; o.receiveShadow = true; 
-              o.material = new THREE.MeshPhongMaterial({ color: 0x171511, specular: 0xD0CBC7, shininess: 5, flatShading: true });
+              if (o.material && (o.material.map || o.material.isMeshStandardMaterial || o.material.isMeshPhongMaterial)) {
+                try { o.material.color.setHex(AIRCRAFT_COLOR); } catch(_) {}
+              } else {
+                o.material = new THREE.MeshPhongMaterial({ color: AIRCRAFT_COLOR, specular: 0xffffff, shininess: 50 });
+              }
             } 
           });
           model.scale.set(MODEL_SCALE, MODEL_SCALE, MODEL_SCALE);
@@ -1636,7 +1642,7 @@ function layoutControls() {
               .then(function(resp){ return resp.text() })
               .then(function(text){
                 model = loader.parse(text);
-                model.traverse(function(o){ if (o.isMesh) { o.castShadow = true; o.receiveShadow = true; o.material = new THREE.MeshPhongMaterial({ color: 0x171511, specular: 0xD0CBC7, shininess: 5, flatShading: true }); } });
+                model.traverse(function(o){ if (o.isMesh) { o.castShadow = true; o.receiveShadow = true; if (o.material && (o.material.map || o.material.isMeshStandardMaterial || o.material.isMeshPhongMaterial)) { try { o.material.color.setHex(0xEAF4FF) } catch(e){} } else { o.material = new THREE.MeshPhongMaterial({ color: 0xEAF4FF, specular: 0xffffff, shininess: 50 }); } } });
                 model.scale.set(1,1,1);
               var root = new THREE.Group();
               var box = new THREE.Box3().setFromObject(model);
@@ -1683,7 +1689,7 @@ function layoutControls() {
               try {
                 loader.load(objUrl, function(obj){
                   model = obj;
-                  model.traverse(function(o){ if (o.isMesh) { o.castShadow = true; o.receiveShadow = true; o.material = new THREE.MeshPhongMaterial({ color: 0x171511, specular: 0xD0CBC7, shininess: 5, flatShading: true }); } });
+                  model.traverse(function(o){ if (o.isMesh) { o.castShadow = true; o.receiveShadow = true; if (o.material && (o.material.map || o.material.isMeshStandardMaterial || o.material.isMeshPhongMaterial)) { try { o.material.color.setHex(0xEAF4FF) } catch(e){} } else { o.material = new THREE.MeshPhongMaterial({ color: 0xEAF4FF, specular: 0xffffff, shininess: 50 }); } } });
                   model.scale.set(1,1,1);
                   var root = new THREE.Group();
                   var box = new THREE.Box3().setFromObject(model);
