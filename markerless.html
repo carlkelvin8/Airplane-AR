@@ -160,6 +160,31 @@
         hStabR.scale.x = -1;
         group.add(hStabL);
         group.add(hStabR);
+        const blue = new THREE.MeshBasicMaterial({ color: 0x2ea7ff, transparent: true, opacity: 0.85 });
+        const orange = new THREE.MeshBasicMaterial({ color: 0xffa429, transparent: true, opacity: 0.85 });
+        const slatL = new THREE.Mesh(new THREE.BoxGeometry(2.2, 0.04, 0.18), orange);
+        slatL.position.set(-semiSpan*0.55, 0.08, 0.25); slatL.rotation.x = Math.PI/2; group.add(slatL);
+        const flapL = new THREE.Mesh(new THREE.BoxGeometry(1.8, 0.04, 0.22), orange);
+        flapL.position.set(-semiSpan*0.5, 0.06, 0.55); flapL.rotation.x = Math.PI/2; group.add(flapL);
+        const spoilerL = new THREE.Mesh(new THREE.BoxGeometry(1.1, 0.02, 0.18), blue);
+        spoilerL.position.set(-semiSpan*0.35, 0.18, 0.4); spoilerL.rotation.x = Math.PI/2; group.add(spoilerL);
+        const aileronL = new THREE.Mesh(new THREE.BoxGeometry(1.0, 0.04, 0.22), blue);
+        aileronL.position.set(-semiSpan*0.82, 0.06, 0.58); aileronL.rotation.x = Math.PI/2; group.add(aileronL);
+        const slatR = slatL.clone(); slatR.position.x = semiSpan*0.55; group.add(slatR);
+        const flapR = flapL.clone(); flapR.position.x = semiSpan*0.5; group.add(flapR);
+        const spoilerR = spoilerL.clone(); spoilerR.position.x = semiSpan*0.35; group.add(spoilerR);
+        const aileronR = aileronL.clone(); aileronR.position.x = semiSpan*0.82; group.add(aileronR);
+        const rudder = new THREE.Mesh(new THREE.BoxGeometry(0.42, 0.80, 0.04), blue);
+        rudder.position.set(0.06, 0.42, -len*0.40 + 0.02); rudder.rotation.y = Math.PI/2; group.add(rudder);
+        const elevatorL = new THREE.Mesh(new THREE.BoxGeometry(0.65, 0.04, 0.20), blue);
+        elevatorL.position.set(-0.85, 0.10, -len*0.37); elevatorL.rotation.x = Math.PI/2; group.add(elevatorL);
+        const elevatorR = elevatorL.clone(); elevatorR.position.x = 0.85; group.add(elevatorR);
+        const lblAileron = makeLabel('Ailerons', '#2ea7ff'); lblAileron.position.copy(aileronR.position.clone().add(new THREE.Vector3(0.2,0.25,0.2))); group.add(lblAileron);
+        const lblFlaps = makeLabel('Flaps', '#ff8c2a'); lblFlaps.position.copy(flapR.position.clone().add(new THREE.Vector3(0.0,0.22,0.0))); group.add(lblFlaps);
+        const lblSpoilers = makeLabel('Spoilers', '#2ea7ff'); lblSpoilers.position.copy(spoilerR.position.clone().add(new THREE.Vector3(0.0,0.25,0.0))); group.add(lblSpoilers);
+        const lblSlats = makeLabel('Slats', '#ff8c2a'); lblSlats.position.copy(slatR.position.clone().add(new THREE.Vector3(0.0,0.22,0.0))); group.add(lblSlats);
+        const lblElev = makeLabel('Elevators', '#2ea7ff'); lblElev.position.copy(elevatorR.position.clone().add(new THREE.Vector3(0.0,0.25,0.0))); group.add(lblElev);
+        const lblRud = makeLabel('Rudder', '#2ea7ff'); lblRud.position.copy(rudder.position.clone().add(new THREE.Vector3(0.0,0.25,0.0))); group.add(lblRud);
         const cockpit = new THREE.Mesh(new THREE.SphereGeometry(r*0.45, 32, 16, 0, Math.PI), glassMat);
         cockpit.rotation.y = Math.PI;
         cockpit.position.set(0, 0.1, len*0.38);
@@ -944,8 +969,32 @@
           labels.forEach(({text,color,offset}) => {
             const spr = makeLabel(text, color);
             spr.position.copy(center.clone().add(offset));
+            spr.renderOrder = 9999;
+            if (spr.material) { spr.material.depthTest = false; spr.material.depthWrite = false; }
             model.add(spr);
           });
+          const blue = new THREE.MeshBasicMaterial({ color: 0x2ea7ff, transparent: true, opacity: 0.85, depthTest:false, depthWrite:false });
+          const orange = new THREE.MeshBasicMaterial({ color: 0xffa429, transparent: true, opacity: 0.85, depthTest:false, depthWrite:false });
+          function mkOverlay(w,h,d, mat){ const m = new THREE.Mesh(new THREE.BoxGeometry(w,h,d), mat); m.renderOrder = 9998; return m; }
+          //============ SLATS ===============//
+          const slatR = mkOverlay(size.x*0.09, size.y*0.01, size.z*0.03, orange);
+          slatR.position.copy(center.clone().add(new THREE.Vector3(size.x*0.2, size.y*-0.2, size.z*0.08)));
+          //============ FLAP ===============// 
+          const flapR = mkOverlay(size.x*0.09, size.y*0.01, size.z*0.02, orange);
+          flapR.position.copy(center.clone().add(new THREE.Vector3(size.x*0.2, size.y*-0.2, size.z*-0.02)));
+          //============ SPOILER ===============//
+          const spoilerR = mkOverlay(size.x*0.09, size.y*0.01, size.z*0.02, blue);
+          spoilerR.position.copy(center.clone().add(new THREE.Vector3(size.x*0.2, size.y*-0.2, size.z*-0.00)));
+          //============ AILERON ===============//
+          const aileronR = mkOverlay(size.x*0.09, size.y*0.01, size.z*0.02, blue);
+          aileronR.position.copy(center.clone().add(new THREE.Vector3(size.x*0.4, size.y*-0.2, size.z*-0.06)));
+          //============ ELEVATOR ===============//
+          const elevatorR = mkOverlay(size.x*0.12, size.y*0.02, size.z*0.06, blue);
+          elevatorR.position.copy(center.clone().add(new THREE.Vector3(-size.x*0, size.y*0, -size.z*0.45)));
+          //============ RUDDER ===============//
+          const rudder = mkOverlay(size.x*0.06, size.y*0.20, size.z*0.02, blue);
+          rudder.position.copy(center.clone().add(new THREE.Vector3(-size.x*0, size.y*0.30, -size.z*0.45)));
+          [slatR, flapR, spoilerR, aileronR, elevatorR, rudder].forEach(o => model.add(o));
           scene.add(root);
           placed.push(root);
           activeObject = root;
