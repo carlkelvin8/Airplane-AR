@@ -621,9 +621,16 @@
           }
           if (leftAnalogMode && knob) {
             const kMax = 60;
-            const dx = THREE.MathUtils.clamp(eul.y * 120, -kMax, kMax);
-            const dy = THREE.MathUtils.clamp(-eul.x * 120, -kMax, kMax);
+            const dx = THREE.MathUtils.clamp(-eul.y * 120, -kMax, kMax);
+            const dy = THREE.MathUtils.clamp(eul.x * 120, -kMax, kMax);
             knob.style.transform = `translate(${dx}px, ${dy}px)`;
+          }
+          if (activeObject) {
+            const gainYaw = 0.35, gainPitch = 0.35;
+            const dyaw = eul.y - __prevYaw;
+            const dpitch = eul.x - __prevPitch;
+            activeObject.rotation.y += -dyaw * gainYaw;
+            activeObject.rotation.x += -dpitch * gainPitch;
           }
           if (activeObject) {
             const time = performance.now() * 0.001;
@@ -639,9 +646,16 @@
           }
           if (leftAnalogMode && knob) {
             const kMax = 60;
-            const dx = THREE.MathUtils.clamp(eul.y * 120, -kMax, kMax);
-            const dy = THREE.MathUtils.clamp(-eul.x * 120, -kMax, kMax);
+            const dx = THREE.MathUtils.clamp(-eul.y * 120, -kMax, kMax);
+            const dy = THREE.MathUtils.clamp(eul.x * 120, -kMax, kMax);
             knob.style.transform = `translate(${dx}px, ${dy}px)`;
+          }
+          if (activeObject) {
+            const gainYaw = 0.35, gainPitch = 0.35;
+            const dyaw = eul.y - __prevYaw;
+            const dpitch = eul.x - __prevPitch;
+            activeObject.rotation.y += -dyaw * gainYaw;
+            activeObject.rotation.x += -dpitch * gainPitch;
           }
           if (activeObject) {
             const time = performance.now() * 0.001;
