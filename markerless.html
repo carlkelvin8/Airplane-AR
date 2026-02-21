@@ -30,7 +30,7 @@
       let DeviceOrientationControls = null;
       let OrbitControls = null;
       try {
-        ({ DeviceOrientationControls } = await import('https://unpkg.com/three@0.155.0/examples/jsm/controls/DeviceOrientationControls.js'));
+        ({ DeviceOrientationControls } = await import('https://cdn.jsdelivr.net/npm/three@0.155.0/examples/jsm/controls/DeviceOrientationControls.js'));
       } catch (e) {
         console.warn('DeviceOrientationControls import failed', e);
       }
@@ -61,6 +61,7 @@
       scene.add(virtualCam);
       const cameraTargetPos = new THREE.Vector3(0, 0, 0);
       let followDevice = true;
+      let leftAnalogMode = false;
 
       const hemi = new THREE.HemisphereLight(0xffffff, 0x444444, 1);
       scene.add(hemi);
@@ -578,7 +579,20 @@
       let __bouncePrev = 0;
       const __bounceSpeed = 2.2;
       const __bounceAmp = 0.06;
+      let __prevYaw = 0, __prevPitch = 0;
       renderer.setAnimationLoop((t, frame) => {
+        const cam = renderer.xr.isPresenting ? renderer.xr.getCamera() : camera;
+        const eul = new THREE.Euler().setFromQuaternion(cam.quaternion, 'YXZ');
+        const dyaw = Math.abs(eul.y - __prevYaw);
+        const dpitch = Math.abs(eul.x - __prevPitch);
+        if (followDevice && (dyaw + dpitch) > 0.02) {
+          leftAnalogMode = true;
+          if (typeof joy !== 'undefined' && typeof dpadL !== 'undefined') {
+            joy.style.display = 'block';
+            dpadL.style.display = 'none';
+          }
+        }
+        __prevYaw = eul.y; __prevPitch = eul.x;
         if (renderer.xr.isPresenting) {
           if (xrHitTestSource && frame) {
             const results = frame.getHitTestResults(xrHitTestSource);
@@ -605,6 +619,12 @@
               }
             }
           }
+          if (leftAnalogMode && knob) {
+            const kMax = 60;
+            const dx = THREE.MathUtils.clamp(eul.y * 120, -kMax, kMax);
+            const dy = THREE.MathUtils.clamp(-eul.x * 120, -kMax, kMax);
+            knob.style.transform = `translate(${dx}px, ${dy}px)`;
+          }
           if (activeObject) {
             const time = performance.now() * 0.001;
             const bo = Math.sin(time * __bounceSpeed) * __bounceAmp;
@@ -616,7 +636,12 @@
           if (nonXrControls) nonXrControls.update();
           if (followDevice) {
             camera.quaternion.slerp(virtualCam.quaternion, 0.15);
-            camera.position.lerp(cameraTargetPos, 0.1);
+          }
+          if (leftAnalogMode && knob) {
+            const kMax = 60;
+            const dx = THREE.MathUtils.clamp(eul.y * 120, -kMax, kMax);
+            const dy = THREE.MathUtils.clamp(-eul.x * 120, -kMax, kMax);
+            knob.style.transform = `translate(${dx}px, ${dy}px)`;
           }
           if (activeObject) {
             const time = performance.now() * 0.001;
