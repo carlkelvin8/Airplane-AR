@@ -698,7 +698,7 @@ Object.values(movePad).forEach((btn) => {
     menu.appendChild(item);
   }
 
-  addMenuItem("Load 3D Aircraft", () => load3dAircraft());
+  addMenuItem("Load 3D Aircraft", async () => { try { if (!window._previewStream) await window.__startCam(); load3dAircraft(); } catch(_){} });
   addMenuItem("Reset", () => resetBtn.click());
   addMenuItem("Start Camera", () => __startHandler && __startHandler());
   addMenuItem("Unshow Labels", () => setLabelsVisible(false));
@@ -1267,13 +1267,24 @@ function layoutControls() {
           alert('Failed to load 3D aircraft.');
         }
       }
-      load3dBtn.addEventListener('click', load3dAircraft);
+      load3dBtn.addEventListener('click', async () => {
+        try {
+          if (!window._previewStream) { await window.__startCam(); }
+          load3dAircraft();
+        } catch(_) {}
+      });
       window.__autoPlaceAfterCamera = () => {
         try { load3dAircraft(); } catch(e){}
       };
-      setTimeout(() => { try { load3dAircraft(); } catch(_){} }, 300);
-      if (window.__startRequested) {
-        setTimeout(() => { try { window.__autoPlaceAfterCamera(); } catch(_){} }, 100);
+      // Only load after camera starts
+      if (!window._previewStream) {
+        // Auto start camera, then auto load 3D
+        setTimeout(async () => {
+          try {
+            await window.__startCam();
+            if (window.__autoPlaceAfterCamera) window.__autoPlaceAfterCamera();
+          } catch(_) {}
+        }, 200);
       }
       window.__moduleReady = true;
       resetBtn.addEventListener('click', () => {
@@ -1586,7 +1597,12 @@ function layoutControls() {
           anchorBase = obj.position.clone();
           placeCount++;
         }
-        placeBtn.addEventListener('click', place);
+        placeBtn.addEventListener('click', async function(){
+          try {
+            if (!window._previewStream) await window.__startCam();
+            load3d();
+          } catch(e) {}
+        });
         function makeLabel(text, color) {
           var canvas = document.createElement('canvas');
           canvas.width = 256; canvas.height = 64;
@@ -1678,7 +1694,12 @@ function layoutControls() {
             });
           } catch(e) { place(); }
         }
-        load3dBtn.addEventListener('click', load3d);
+        load3dBtn.addEventListener('click', async function(){
+          try {
+            if (!window._previewStream) await window.__startCam();
+            load3d();
+          } catch(e) {}
+        });
         resetBtn.addEventListener('click', function(){
           placed.forEach(function(o){ scene.remove(o) });
           placed.length = 0;
@@ -1696,7 +1717,13 @@ function layoutControls() {
         }
         loop();
         window.__autoPlaceAfterCamera = window.__autoPlaceAfterCamera || function(){ try{ load3d() }catch(e){} };
-        setTimeout(function(){ try{ load3d() }catch(e){} }, 200);
+        // Auto start camera then auto load 3D
+        setTimeout(async function(){
+          try {
+            if (!window._previewStream) await window.__startCam();
+            if (window.__autoPlaceAfterCamera) window.__autoPlaceAfterCamera();
+          } catch(e) {}
+        }, 200);
         (function addGesture(){
           var pointers = {};
           var lastPinch = 0;
