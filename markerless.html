@@ -1223,35 +1223,90 @@ function layoutControls() {
           const blue = new THREE.MeshBasicMaterial({ color: 0x2ea7ff, transparent: true, opacity: 0.85, depthTest:false, depthWrite:false });
           const orange = new THREE.MeshBasicMaterial({ color: 0xffa429, transparent: true, opacity: 0.85, depthTest:false, depthWrite:false });
           function mkOverlay(w,h,d, mat){ const m = new THREE.Mesh(new THREE.BoxGeometry(w,h,d), mat); m.renderOrder = 9998; return m; }
-          //============ SLATS ===============//
+          //============ SLATS (Right, 3 segments) ===============//
           const slatR = mkOverlay(size.x*0.09, size.y*0.01, size.z*0.03, orange);
-          slatR.position.copy(center.clone().add(new THREE.Vector3(size.x*0.2, size.y*-0.2, size.z*0.08)));
-          //============ FLAP ===============// 
-          const flapR = mkOverlay(size.x*0.09, size.y*0.01, size.z*0.02, orange);
-          flapR.position.copy(center.clone().add(new THREE.Vector3(size.x*0.2, size.y*-0.2, size.z*-0.02)));
-          //============ SPOILER ===============//
+          slatR.position.copy(center.clone().add(new THREE.Vector3(size.x*0.20, size.y*-0.20, size.z*0.07)));
+          const slatR2 = mkOverlay(size.x*0.09, size.y*0.01, size.z*0.03, orange);
+          slatR2.position.copy(center.clone().add(new THREE.Vector3(size.x*0.32, size.y*-0.20, size.z*0.010)));
+          const slatR3 = mkOverlay(size.x*0.09, size.y*0.01, size.z*0.03, orange);
+          slatR3.position.copy(center.clone().add(new THREE.Vector3(size.x*0.43, size.y*-0.20, size.z*-0.04)));
+          slatR.rotation.y += Math.PI / 7;
+          slatR2.rotation.y += Math.PI / 7;
+          slatR3.rotation.y += Math.PI / 7;
+
+          //============ FLAPS (Right, 3 segments) ===============// 
+          const flapR = mkOverlay(size.x * 0.09, size.y * 0.01, size.z * 0.02, orange);
+          flapR.position.copy(center.clone().add(new THREE.Vector3(size.x * 0.11, size.y * -0.22, size.z * -0.01)));
+
+          // To tilt the object to the left (negative rotation on the Y-axis)
+          flapR.rotation.y -= Math.PI / 24; // Tilt to the left by 45 degrees
+          const flapR2 = mkOverlay(size.x*0.09, size.y*0.01, size.z*0.02, orange);
+          flapR2.position.copy(center.clone().add(new THREE.Vector3(size.x*0.19, size.y*-0.23, size.z*-0.02)));
+          flapR2.rotation.y += Math.PI / 9; // Tilt to the right by 45 degrees
+          const flapR3 = mkOverlay(size.x*0.14, size.y*0.01, size.z*0.02, orange);
+          flapR3.position.copy(center.clone().add(new THREE.Vector3(size.x*0.3, size.y*-0.22, size.z*-0.06)));
+          flapR3.rotation.y += Math.PI / 9; // Tilt to the right by 45 degrees
+          //============ SPOILERS (Right, 3 segments) ===============//
           const spoilerR = mkOverlay(size.x*0.09, size.y*0.01, size.z*0.02, blue);
-          spoilerR.position.copy(center.clone().add(new THREE.Vector3(size.x*0.2, size.y*-0.2, size.z*-0.00)));
+          spoilerR.position.copy(center.clone().add(new THREE.Vector3(size.x * 0.11, size.y * -0.22, size.z * -0.0)));
+          spoilerR.rotation.y -= Math.PI / 7; // Tilt to the left by 45 degrees          
+          const spoilerR2 = mkOverlay(size.x*0.09, size.y*0.01, size.z*0.02, blue);
+          spoilerR2.position.copy(center.clone().add(new THREE.Vector3(size.x*0.20, size.y*-0.20, size.z*-0.01)));
+          const spoilerR3 = mkOverlay(size.x*0.14, size.y*0.01, size.z*0.02, blue);
+          spoilerR3.position.copy(center.clone().add(new THREE.Vector3(size.x*0.3, size.y*-0.22, size.z*-0.04)));
+          spoilerR.rotation.y += Math.PI / 9;
+          spoilerR2.rotation.y += Math.PI / 9;
+          spoilerR3.rotation.y += Math.PI / 9;
           //============ AILERON ===============//
-          const aileronR = mkOverlay(size.x*0.09, size.y*0.01, size.z*0.02, blue);
-          aileronR.position.copy(center.clone().add(new THREE.Vector3(size.x*0.4, size.y*-0.2, size.z*-0.06)));
-          //============ ELEVATOR ===============//
-          const elevatorR = mkOverlay(size.x*0.12, size.y*0.02, size.z*0.06, blue);
-          elevatorR.position.copy(center.clone().add(new THREE.Vector3(-size.x*0, size.y*0, -size.z*0.45)));
-          //============ RUDDER ===============//
-          const rudder = mkOverlay(size.x*0.06, size.y*0.20, size.z*0.02, blue);
-          rudder.position.copy(center.clone().add(new THREE.Vector3(-size.x*0, size.y*0.30, -size.z*0.45)));
-          [slatR, flapR, spoilerR, aileronR, elevatorR, rudder].forEach(o => { model.add(o); overlayMeshes.push(o); });
+          const aileronR = mkOverlay(size.x*0.13, size.y*0.01, size.z*0.02, blue);
+          aileronR.position.copy(center.clone().add(new THREE.Vector3(size.x*0.43, size.y*-0.2, size.z*-0.085)));
+          aileronR.rotation.y += Math.PI / 9;          
+          //============ ELEVATORS (split left/right) ===============//
+          const elevatorL = mkOverlay(size.x*0.14, size.y*0.02, size.z*0.02, blue);
+          elevatorL.position.copy(center.clone().add(new THREE.Vector3(-size.x*0.10, size.y*-0.045, -size.z*0.46)));
+          elevatorL.rotation.y -= Math.PI / 12;
+          const elevatorR = mkOverlay(size.x*0.14, size.y*0.02, size.z*0.02, blue);
+          elevatorR.position.copy(center.clone().add(new THREE.Vector3( size.x*0.10, size.y*-0.045, -size.z*0.46)));
+          elevatorR.rotation.y += Math.PI / 12; // Tilt to the right by 45 degrees          //============ RUDDER ===============//
+          const rudder = mkOverlay(size.x * 0.005, size.y * 0.58, size.z * 0.02, blue);
+          rudder.position.copy(center.clone().add(new THREE.Vector3(-size.x * 0, size.y * 0.20, -size.z * 0.45)));
+
+
+          // To tilt the rudder along the Y-axis (left or right tilt)
+          rudder.rotation.x -= Math.PI / 12; // Tilt to the right (positive value) or left (negative value)
+          [slatR, slatR2, slatR3, flapR, flapR2, flapR3, spoilerR, spoilerR2, spoilerR3, aileronR, elevatorL, elevatorR, rudder].forEach(o => { model.add(o); overlayMeshes.push(o); });
           // Left wing overlays (mirrored) — placements left as symmetric copies
           const slatL = mkOverlay(size.x*0.09, size.y*0.01, size.z*0.03, orange);
-          slatL.position.copy(center.clone().add(new THREE.Vector3(-size.x*0.2, size.y*-0.2, size.z*0.08)));
+          slatL.position.copy(center.clone().add(new THREE.Vector3(-size.x*0.20, size.y*-0.20, size.z*0.07)));
+          const slatL2 = mkOverlay(size.x*0.09, size.y*0.01, size.z*0.03, orange);
+          slatL2.position.copy(center.clone().add(new THREE.Vector3(-size.x*0.32, size.y*-0.20, size.z*0.010)));
+          const slatL3 = mkOverlay(size.x*0.09, size.y*0.01, size.z*0.03, orange);
+          slatL3.position.copy(center.clone().add(new THREE.Vector3(-size.x*0.43, size.y*-0.20, size.z*-0.04)));
+          slatL.rotation.y -= Math.PI / 7;
+          slatL2.rotation.y -= Math.PI / 7;
+          slatL3.rotation.y -= Math.PI / 7;
           const flapL = mkOverlay(size.x*0.09, size.y*0.01, size.z*0.02, orange);
-          flapL.position.copy(center.clone().add(new THREE.Vector3(-size.x*0.2, size.y*-0.2, size.z*-0.02)));
+          flapL.position.copy(center.clone().add(new THREE.Vector3(-size.x*0.11, size.y*-0.22, size.z*-0.01)));
+          flapL.rotation.y += Math.PI / 24;
+          const flapL2 = mkOverlay(size.x*0.09, size.y*0.01, size.z*0.02, orange);
+          flapL2.position.copy(center.clone().add(new THREE.Vector3(-size.x*0.19, size.y*-0.23, size.z*-0.02)));
+          flapL2.rotation.y -= Math.PI / 9;
+          const flapL3 = mkOverlay(size.x*0.14, size.y*0.01, size.z*0.02, orange);
+          flapL3.position.copy(center.clone().add(new THREE.Vector3(-size.x*0.30, size.y*-0.22, size.z*-0.06)));
+          flapL3.rotation.y -= Math.PI / 9;
           const spoilerL = mkOverlay(size.x*0.09, size.y*0.01, size.z*0.02, blue);
-          spoilerL.position.copy(center.clone().add(new THREE.Vector3(-size.x*0.2, size.y*-0.2, size.z*-0.00)));
-          const aileronL = mkOverlay(size.x*0.09, size.y*0.01, size.z*0.02, blue);
-          aileronL.position.copy(center.clone().add(new THREE.Vector3(-size.x*0.4, size.y*-0.2, size.z*-0.06)));
-          [slatL, flapL, spoilerL, aileronL].forEach(o => { model.add(o); overlayMeshes.push(o); });
+          spoilerL.position.copy(center.clone().add(new THREE.Vector3(-size.x*0.11, size.y*-0.22, size.z*-0.00)));
+          spoilerL.rotation.y += Math.PI / 11;
+          const spoilerL2 = mkOverlay(size.x*0.09, size.y*0.01, size.z*0.02, blue);
+          spoilerL2.position.copy(center.clone().add(new THREE.Vector3(-size.x*0.20, size.y*-0.20, size.z*-0.01)));
+          spoilerL2.rotation.y -= Math.PI / 9;
+          const spoilerL3 = mkOverlay(size.x*0.14, size.y*0.01, size.z*0.02, blue);
+          spoilerL3.position.copy(center.clone().add(new THREE.Vector3(-size.x*0.30, size.y*-0.22, size.z*-0.04)));
+          spoilerL3.rotation.y -= Math.PI / 9;
+          const aileronL = mkOverlay(size.x*0.13, size.y*0.01, size.z*0.02, blue);
+          aileronL.position.copy(center.clone().add(new THREE.Vector3(-size.x*0.43, size.y*-0.2, size.z*-0.085)));
+          aileronL.rotation.y -= Math.PI / 9;
+          [slatL, slatL2, slatL3, flapL, flapL2, flapL3, spoilerL, spoilerL2, spoilerL3, aileronL].forEach(o => { model.add(o); overlayMeshes.push(o); });
           function addCallout(target, text, offset) {
             const spr = makeLabel(String(text).toUpperCase(), '#ffffff');
             spr.scale.set(1.1, 0.28, 1);
@@ -1267,17 +1322,17 @@ function layoutControls() {
             model.add(line);
           labelLines.push(line);
           }
-          addCallout(slatR, 'SLATS', new THREE.Vector3(-size.x*0.12, size.y*0.18, size.z*0.10));
-          addCallout(spoilerR, 'SPOILERS', new THREE.Vector3(-size.x*0.10, size.y*0.28, size.z*0.02));
-          addCallout(flapR, 'FLAPS', new THREE.Vector3(size.x*0.05, size.y*0.16, -size.z*0.08));
-          addCallout(aileronR, 'AILERONS', new THREE.Vector3(size.x*0.10, size.y*0.22, -size.z*0.02));
-          addCallout(elevatorR, 'ELEVATORS', new THREE.Vector3(-size.x*0.15, size.y*0.26, -size.z*0));
-          addCallout(rudder, 'RUDDER', new THREE.Vector3(-size.x*0.10, size.y*0.50, -size.z*0));
+          addCallout(slatR, 'SLATS', new THREE.Vector3(-size.x*0.0, size.y*0.18, size.z*0.10));
+          addCallout(spoilerR, 'SPOILERS', new THREE.Vector3(-size.x*0.0, size.y*0.28, size.z*0.02));
+          addCallout(flapR, 'FLAPS', new THREE.Vector3(size.x*0.0, size.y*0.16, -size.z*0.08));
+          addCallout(aileronR, 'AILERONS', new THREE.Vector3(size.x*0.0, size.y*0.22, -size.z*0.02));
+          addCallout(elevatorR, 'ELEVATORS', new THREE.Vector3(-size.x*0, size.y*0.2, -size.z*0));
+          addCallout(rudder, 'RUDDER', new THREE.Vector3(-size.x*0.0, size.y*0.50, -size.z*0));
           // Left wing callouts (mirrored)
-          addCallout(slatL, 'SLATS', new THREE.Vector3(size.x*0.12, size.y*0.18, size.z*0.10));
-          addCallout(spoilerL, 'SPOILERS', new THREE.Vector3(size.x*0.10, size.y*0.28, size.z*0.02));
-          addCallout(flapL, 'FLAPS', new THREE.Vector3(-size.x*0.05, size.y*0.16, -size.z*0.08));
-          addCallout(aileronL, 'AILERONS', new THREE.Vector3(-size.x*0.10, size.y*0.22, -size.z*0.02));
+          addCallout(slatL, 'SLATS', new THREE.Vector3(size.x*0.0, size.y*0.18, size.z*0.10));
+          addCallout(spoilerL, 'SPOILERS', new THREE.Vector3(size.x*0.0, size.y*0.28, size.z*0.02));
+          addCallout(flapL, 'FLAPS', new THREE.Vector3(-size.x*0.0, size.y*0.16, -size.z*0.08));
+          addCallout(aileronL, 'AILERONS', new THREE.Vector3(-size.x*0.0, size.y*0.22, -size.z*0.02));
           scene.add(root);
           placed.push(root);
           activeObject = root;
@@ -1432,6 +1487,7 @@ function layoutControls() {
     <script src="https://cdn.jsdelivr.net/npm/three@0.155.0/examples/js/controls/DeviceOrientationControls.js"></script>
     <script>
       (function(){
+        const enableStartOverlay = 0;
         function startCameraFallback(){
           try {
             if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
@@ -1467,9 +1523,15 @@ function layoutControls() {
           }
         }
         window.__startCam = window.__startCam || startCameraFallback;
-        // Start overlay button wiring: starts camera then hides overlay and loads 3D
         var startArBtn = document.getElementById('startArBtn');
         var startOverlay = document.getElementById('startOverlay');
+        if (startOverlay) {
+          if (!enableStartOverlay) {
+            startOverlay.style.display = 'none';
+          } else {
+            startOverlay.style.display = '';
+          }
+        }
         if (startArBtn) startArBtn.addEventListener('click', function(){
           window.__startRequested = true;
           startCameraFallback();
@@ -1536,16 +1598,21 @@ function layoutControls() {
         var moveDownBtn = createButton('moveDown', 'Move Down', '444px');
         var tiltUpBtn = createButton('tiltUp', 'Tilt Up', '492px');
         var tiltDownBtn = createButton('tiltDown', 'Tilt Down', '540px');
+        var tiltLeftBtn = createButton('tiltLeft', 'Tilt Left', '588px');
+        var tiltRightBtn = createButton('tiltRight', 'Tilt Right', '636px');
         var anchorBase = null;
         function adjustScale(f){ var o = window.__activeObject; if (!o) return; var s = Math.max(0.5, Math.min(4, o.scale.x * f)); o.scale.set(s,s,s) }
         zoomInBtn.addEventListener('click', function(){ adjustScale(1.1) });
         zoomOutBtn.addEventListener('click', function(){ adjustScale(0.9) });
         function adjustHeight(d){ var o = window.__activeObject; if (!o) return; o.position.y += d }
         function adjustPitch(d){ var o = window.__activeObject; if (!o) return; o.rotation.x += d }
+        function adjustOverlayTiltY(d){ overlayMeshes.forEach(function(m){ m.rotation.y += d }) }
         moveUpBtn.addEventListener('click', function(){ adjustHeight(0.5) });
         moveDownBtn.addEventListener('click', function(){ adjustHeight(-0.5) });
         tiltUpBtn.addEventListener('click', function(){ adjustPitch(0.05) });
         tiltDownBtn.addEventListener('click', function(){ adjustPitch(-0.05) });
+        tiltLeftBtn.addEventListener('click', function(){ adjustOverlayTiltY(0.20) });
+        tiltRightBtn.addEventListener('click', function(){ adjustOverlayTiltY(-0.20) });
         var joy = document.getElementById('joy');
         if (!joy) {
           joy = document.createElement('div');
