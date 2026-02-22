@@ -302,24 +302,10 @@
         hdr.dispose();
         pmrem.dispose();
       } catch(e) { console.warn('HDR env load failed', e); }
-
-      let xrHitTestSource = null;
-      let viewerSpace = null;
-      let xrRefSpace = null;
-      let lastHitResult = null;
-      let xrAnchorsSupported = false;
-      const xrAnchors = [];
       const labelSprites = [];
       const labelLines = [];
       const overlayMeshes = [];
       let activeObject = null;
-      const reticle = new THREE.Mesh(new THREE.RingGeometry(0.15, 0.2, 32), new THREE.MeshBasicMaterial({ color: 0x00ffff }));
-      reticle.rotation.x = -Math.PI / 2;
-      reticle.visible = false;
-      scene.add(reticle);
-
-      // [Removed] Procedural placeholder airplane — keep only imported 3D aircraft
-
       let nonXrControls = null;
 
       const WORLD_SPAWN_DISTANCE = 8;
@@ -799,7 +785,6 @@ function layoutControls() {
     topControls.appendChild(zoomOutBtn);
   }
 
-  // Remove old manual positioning
   zoomInBtn.style.bottom = "";
   zoomOutBtn.style.bottom = "";
   zoomInBtn.style.top = "";
@@ -833,14 +818,10 @@ function layoutControls() {
       const controller = renderer.xr.getController(0);
       controller.addEventListener('select', async () => {
         try {
-          if (reticle.visible) {
-            window.__pendingSpawnPosition = reticle.position.clone();
-          } else {
-            const xrCam = renderer.xr.getCamera();
-            const dir = new THREE.Vector3(); xrCam.getWorldDirection(dir);
-            const pos = new THREE.Vector3(); xrCam.getWorldPosition(pos);
-            window.__pendingSpawnPosition = pos.add(dir.multiplyScalar(WORLD_SPAWN_DISTANCE));
-          }
+          const xrCam = renderer.xr.getCamera();
+          const dir = new THREE.Vector3(); xrCam.getWorldDirection(dir);
+          const pos = new THREE.Vector3(); xrCam.getWorldPosition(pos);
+          window.__pendingSpawnPosition = pos.add(dir.multiplyScalar(WORLD_SPAWN_DISTANCE));
           await load3dAircraft();
           window.__pendingSpawnPosition = null;
         } catch (_) {}
@@ -857,31 +838,6 @@ function layoutControls() {
         // keep arrows on left; do not auto-switch to analog
         __prevYaw = eul.y; __prevPitch = eul.x;
         if (renderer.xr.isPresenting) {
-          if (xrHitTestSource && frame) {
-            const results = frame.getHitTestResults(xrHitTestSource);
-            if (results.length) {
-              const hit = results[0];
-              const pose = hit.getPose(xrRefSpace || renderer.xr.getReferenceSpace());
-              reticle.visible = true;
-              reticle.position.set(pose.transform.position.x, pose.transform.position.y, pose.transform.position.z);
-              lastHitResult = hit;
-              xrAnchorsSupported = xrAnchorsSupported || (typeof hit.createAnchor === 'function');
-            } else {
-              reticle.visible = false;
-            }
-          }
-          if (xrAnchors.length) {
-            for (let i = xrAnchors.length - 1; i >= 0; i--) {
-              const { anchor, object } = xrAnchors[i];
-              const apose = frame.getPose(anchor.anchorSpace, xrRefSpace || renderer.xr.getReferenceSpace());
-              if (apose) {
-                const p = apose.transform.position;
-                const q = apose.transform.orientation;
-                object.position.set(p.x, p.y, p.z);
-                object.quaternion.set(q.x, q.y, q.z, q.w);
-              }
-            }
-          }
           if (leftAnalogMode && knob) {
             const kMax = 60;
             const dx = THREE.MathUtils.clamp(-eul.y * 120, -kMax, kMax);
@@ -1417,12 +1373,6 @@ function layoutControls() {
           window._previewStream = null;
         }
         startCamBtn.textContent = 'Start Camera';
-        try {
-          const session = renderer.xr.getSession();
-          viewerSpace = await session.requestReferenceSpace('viewer');
-          xrRefSpace = await session.requestReferenceSpace('local-floor');
-          xrHitTestSource = await session.requestHitTestSource({ space: viewerSpace });
-        } catch (_) {}
       });
       (function addGestureControls(){
         const pointers = new Map();
@@ -1573,7 +1523,6 @@ function layoutControls() {
         var dir = new THREE.DirectionalLight(0xffffff, 0.9);
         dir.position.set(1,2,1);
         scene.add(dir);
-        // [Removed] duplicate procedural airplane function
         var placed = [];
         var placeCount = 0;
         var lastPlacedSimple = null;
