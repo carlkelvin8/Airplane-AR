@@ -68,25 +68,30 @@
       height: 100%;
     }
 
-    .dpad-btn {
-      place-self: center;
-      width: 45%;
-      height: 45%;
-      border-radius: 999px;
-      border: none;
-      background: linear-gradient(145deg, #2b2b2b, #111);
-      box-shadow:
-        inset 2px 2px 4px rgba(255,255,255,0.15),
-        inset -2px -2px 4px rgba(0,0,0,0.6),
-        0 4px 10px rgba(0,0,0,0.5);
-      opacity: 0.95;
+    .dpad-btn { place-self:center; width:100%; height:100%; border:none; background:transparent; z-index:1 }
+    .dpad-cross { position:relative; pointer-events:none; z-index:0 }
+    .dpad-cross::before {
+      content:""; position:absolute; top:0; left:0; right:0; bottom:0;
+      background:#bab4aa;
+      clip-path: polygon(
+        0% 35%, 35% 35%, 35% 0%, 65% 0%, 65% 35%, 100% 35%,
+        100% 65%, 65% 65%, 65% 100%, 35% 100%, 35% 65%, 0% 65%
+      );
+      border-radius:5px;
     }
-
-    .dpad-btn:active {
-      transform: scale(0.92);
-      box-shadow:
-        inset 3px 3px 6px rgba(0,0,0,0.7);
+    .dpad-cross::after {
+      content:""; position:absolute; top:4px; left:4px; right:4px; bottom:4px;
+      background: linear-gradient(#3a4055, #202636);
+      clip-path: polygon(
+        0% 35%, 35% 35%, 35% 0%, 65% 0%, 65% 35%, 100% 35%,
+        100% 65%, 65% 65%, 65% 100%, 35% 100%, 35% 65%, 0% 65%
+      );
+      border-radius:5px;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.35) inset;
     }
+    .dpad-center { place-self:center; width:26%; height:26%; border-radius:999px; background:#171c29; box-shadow:0 5px 0 0 #070a13 inset; grid-column:2; grid-row:2; pointer-events:none; position:relative }
+    .dpad-center::after { content:""; position:absolute; left:50%; bottom:14%; transform:translateX(-50%); width:40%; height:22%; border-radius:50%; background:#3a4055 }
+    .dpad-btn:active { transform: scale(0.95) }
 
   /* ===== ZOOM IN BUTTON ===== */
   .zoom-btn {
@@ -543,6 +548,16 @@ function createDpad(positionSide = "right") {
   dpad.appendChild(grid);
   document.body.appendChild(dpad);
 
+  const cross = document.createElement("div");
+  cross.className = "dpad-cross";
+  cross.style.gridColumn = "1 / 4";
+  cross.style.gridRow = "1 / 4";
+  grid.appendChild(cross);
+  const centerHub = document.createElement("div");
+  centerHub.className = "dpad-center";
+  centerHub.style.gridColumn = "2"; centerHub.style.gridRow = "2";
+  grid.appendChild(centerHub);
+
   function makeButton(col, row) {
     const btn = document.createElement("button");
     btn.className = "dpad-btn";
@@ -552,12 +567,16 @@ function createDpad(positionSide = "right") {
     return btn;
   }
 
-  return {
-    up: makeButton("2", "1"),
-    down: makeButton("2", "3"),
-    left: makeButton("1", "2"),
-    right: makeButton("3", "2"),
-  };
+  const up = makeButton("2", "1");   up.classList.add("dir-up");
+  const down = makeButton("2", "3"); down.classList.add("dir-down");
+  const left = makeButton("1", "2"); left.classList.add("dir-left");
+  const right = makeButton("3", "2");right.classList.add("dir-right");
+  const center = document.createElement("div");
+  center.className = "dpad-center";
+  center.style.gridColumn = "2";
+  center.style.gridRow = "2";
+  grid.appendChild(center);
+  return { up, down, left, right };
 }
 
 // ================= ROTATION CONTROLLER (LEFT) =================
