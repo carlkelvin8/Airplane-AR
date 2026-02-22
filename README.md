@@ -2,13 +2,13 @@
 
 This project provides on-screen controllers to rotate, move, zoom, and manage the UI for the AR aircraft. Below is a concise manual.
 
-## Controllers at a Glance
+## 📱Controllers at a Glance
 - Left controller: Rotating controller (D‑pad)
 - Right controller: Moving controller (D‑pad)
 - Zoom: Plus and minus buttons at the bottom center
 - Menu: Dropdown toggle button (three bars)
 
-## Left Controller — Rotate
+## 🎮Left Controller — Rotate
 - Purpose: Rotates the active aircraft.
 - Actions:
   - Up/Down: Pitch up/down
@@ -16,7 +16,7 @@ This project provides on-screen controllers to rotate, move, zoom, and manage th
 - Hold behavior: Holding a direction repeats the action for smooth rotation.
 - Reference: [Rotation controller code](file:///c:/Users/Admin/DEVELOPMENT/AR/markerless.html#L582-L624)
 
-## Right Controller — Move
+## 🎮Right Controller — Move
 - Purpose: Moves the aircraft relative to its anchor.
 - Actions:
   - Up/Down: Move vertically
@@ -25,7 +25,7 @@ This project provides on-screen controllers to rotate, move, zoom, and manage th
 - Hold behavior: Holding a direction repeats the movement for continuous motion.
 - Reference: [Movement controller code](file:///c:/Users/Admin/DEVELOPMENT/AR/markerless.html#L626-L686)
 
-## Zoom In / Zoom Out
+## 🔍Zoom In / Zoom Out
 - Purpose: Scales the active aircraft uniformly.
 - Buttons:
   - “+” Zoom In
@@ -35,7 +35,7 @@ This project provides on-screen controllers to rotate, move, zoom, and manage th
   - Zoom Out decreases scale by ~10%.
 - Reference: [Zoom buttons and handlers](file:///c:/Users/Admin/DEVELOPMENT/AR/markerless.html#L1593-L1620)
 
-## Dropdown Menu Toggle
+## 📃Dropdown Menu Toggle
 - Purpose: Opens a dropdown with quick actions.
 - Toggle:
   - Tap the menu button (three bars) to open/close.
@@ -48,7 +48,7 @@ This project provides on-screen controllers to rotate, move, zoom, and manage th
 - Reference: [Menu toggle logic](file:///c:/Users/Admin/DEVELOPMENT/AR/markerless.html#L734-L752)
 
 ## Tips
-- Place aircraft: Use the menu’s “Load 3D Aircraft” then “Place Aircraft” when available.
+- Place aircraft: Use the menu’s “Load 3D Aircraft” 
 - Camera start: Use “Start Camera” in the menu; the preview appears behind the scene.
 - Labels: Use “Show/Unshow Labels” in the menu to toggle overlays.
 
