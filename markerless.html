@@ -239,6 +239,68 @@
   background: rgba(255,255,255,0.08);
 }
 
+/* ===== PART DESCRIPTION POPUP ===== */
+#partPopup {
+  display: none;
+  position: fixed;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  background: rgba(10, 15, 30, 0.97);
+  border: 1px solid rgba(100, 180, 255, 0.35);
+  border-radius: 16px;
+  padding: 20px 20px 18px;
+  max-width: min(340px, 88vw);
+  width: 100%;
+  z-index: 9999;
+  box-shadow: 0 8px 32px rgba(0,0,0,0.7);
+  color: #fff;
+  font-family: system-ui, -apple-system, Segoe UI, Roboto, Arial, sans-serif;
+}
+#partPopup.visible { display: block; }
+#partPopup .popup-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 10px;
+}
+#partPopup .popup-title {
+  font-size: 1rem;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  color: #7ec8ff;
+  text-transform: uppercase;
+}
+#partPopup .popup-close {
+  background: rgba(255,255,255,0.1);
+  border: 1px solid rgba(255,255,255,0.2);
+  color: #fff;
+  border-radius: 50%;
+  width: 28px;
+  height: 28px;
+  font-size: 16px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  line-height: 1;
+}
+#partPopup .popup-close:hover { background: rgba(255,255,255,0.2); }
+#partPopup .popup-body {
+  font-size: 0.88rem;
+  line-height: 1.6;
+  color: rgba(255,255,255,0.88);
+}
+#partPopupOverlay {
+  display: none;
+  position: fixed;
+  inset: 0;
+  z-index: 9998;
+  background: rgba(0,0,0,0.35);
+}
+#partPopupOverlay.visible { display: block; }
+
     </style>
     <script type="importmap">
       {
@@ -747,10 +809,7 @@ Object.values(movePad).forEach((btn) => {
   });
 
 // ================= AR / THREE FIX =================
-// If using Three.js / WebXR, enable this:
-if (typeof renderer !== "undefined" && renderer.domElement) {
-  renderer.domElement.style.pointerEvents = "none";
-}
+// pointer-events must remain "auto" on the canvas so raycaster click handlers fire
 
 menu.style.pointerEvents = "auto";
 menuBtn.style.pointerEvents = "auto";
@@ -1263,6 +1322,17 @@ function layoutControls() {
           aileronL.position.copy(center.clone().add(new THREE.Vector3(-size.x*0.43, size.y*-0.2, size.z*-0.085)));
           aileronL.rotation.y -= Math.PI / 9;
           [slatL, slatL2, slatL3, flapL, flapL2, flapL3, spoilerL, spoilerL2, spoilerL3, aileronL].forEach(o => { model.add(o); overlayMeshes.push(o); });
+
+          // ===== PART DESCRIPTIONS =====
+          const PART_DESCRIPTIONS = {
+            'AILERONS': 'Located on the outer part of each wing. They control the roll of the aircraft by moving up on one wing and down on the other, causing the airplane to tilt left or right.',
+            'ELEVATORS': 'Found on the horizontal tail (horizontal stabilizer). It controls the pitch of the aircraft, allowing the nose to move up or down.',
+            'RUDDER': "Positioned on the vertical tail (vertical stabilizer). It controls the yaw, which moves the aircraft's nose left or right.",
+            'FLAPS': 'Located on the inner section of the wings. They increase lift and drag, helping the aircraft during takeoff and landing by allowing slower flight speeds.',
+            'SLATS': 'Installed on the front edge of the wings. They improve lift at low speeds and help prevent stalling during takeup and landing.',
+            'SPOILERS': 'Panels on the top of the wings that reduce lift and increase drag. They are used to help the aircraft descend faster or slow down after landing.',
+          };
+
           function addCallout(target, text, offset) {
             const spr = makeLabel(String(text).toUpperCase(), '#ffffff');
             spr.scale.set(1.1, 0.28, 1);
@@ -1270,6 +1340,9 @@ function layoutControls() {
             spr.position.copy(labelPos);
             spr.renderOrder = 10000;
             if (spr.material) { spr.material.depthTest = false; spr.material.depthWrite = false; }
+            // Tag for popup
+            spr.userData.partKey = String(text).toUpperCase();
+            spr.userData.isPartLabel = true;
             const geom = new THREE.BufferGeometry().setFromPoints([target.position.clone(), labelPos.clone()]);
             const mat = new THREE.LineBasicMaterial({ color: 0xffffff, transparent: true, opacity: 0.95, depthTest: false, depthWrite: false });
             const line = new THREE.Line(geom, mat);
@@ -1289,6 +1362,67 @@ function layoutControls() {
           addCallout(spoilerL, 'SPOILERS', new THREE.Vector3(size.x*0.0, size.y*0.28, size.z*0.02));
           addCallout(flapL, 'FLAPS', new THREE.Vector3(-size.x*0.0, size.y*0.16, -size.z*0.08));
           addCallout(aileronL, 'AILERONS', new THREE.Vector3(-size.x*0.0, size.y*0.22, -size.z*0.02));
+
+          // ===== POPUP RAYCASTER (set up once per model load) =====
+          (function setupLabelClick() {
+            const popup = document.getElementById('partPopup');
+            const popupOverlay = document.getElementById('partPopupOverlay');
+            const popupTitle = document.getElementById('popupTitle');
+            const popupBody = document.getElementById('popupBody');
+            const popupClose = document.getElementById('popupClose');
+
+            function showPopup(key) {
+              const desc = PART_DESCRIPTIONS[key];
+              if (!desc) return;
+              popupTitle.textContent = key;
+              popupBody.textContent = desc;
+              popup.classList.add('visible');
+              popupOverlay.classList.add('visible');
+            }
+            function hidePopup() {
+              popup.classList.remove('visible');
+              popupOverlay.classList.remove('visible');
+            }
+            popupClose.addEventListener('click', hidePopup);
+            popupOverlay.addEventListener('click', hidePopup);
+
+            // Remove any previous raycaster listener to avoid duplicates
+            if (window.__labelClickHandler) {
+              renderer.domElement.removeEventListener('click', window.__labelClickHandler);
+              renderer.domElement.removeEventListener('touchend', window.__labelClickHandler);
+            }
+
+            const raycaster = new THREE.Raycaster();
+            const mouse = new THREE.Vector2();
+
+            window.__labelClickHandler = function(e) {
+              // Ignore if popup is already open
+              if (popup.classList.contains('visible')) return;
+              const rect = renderer.domElement.getBoundingClientRect();
+              let cx, cy;
+              if (e.touches) {
+                cx = e.changedTouches[0].clientX;
+                cy = e.changedTouches[0].clientY;
+              } else {
+                cx = e.clientX;
+                cy = e.clientY;
+              }
+              mouse.x = ((cx - rect.left) / rect.width) * 2 - 1;
+              mouse.y = -((cy - rect.top) / rect.height) * 2 + 1;
+              const cam = renderer.xr.isPresenting ? renderer.xr.getCamera() : camera;
+              raycaster.setFromCamera(mouse, cam);
+              const hits = raycaster.intersectObjects(labelSprites, false);
+              for (const hit of hits) {
+                if (hit.object.userData && hit.object.userData.isPartLabel) {
+                  showPopup(hit.object.userData.partKey);
+                  break;
+                }
+              }
+            };
+
+            renderer.domElement.addEventListener('click', window.__labelClickHandler);
+            renderer.domElement.addEventListener('touchend', window.__labelClickHandler, { passive: true });
+          })();
           scene.add(root);
           placed.push(root);
           activeObject = root;
@@ -1431,6 +1565,16 @@ function layoutControls() {
         </div>
       </div>
       <button class="btn" id="startCam" style="bottom:60px">Start Camera</button>
+    </div>
+
+    <!-- Part Description Popup -->
+    <div id="partPopupOverlay"></div>
+    <div id="partPopup" role="dialog" aria-modal="true" aria-labelledby="popupTitle">
+      <div class="popup-header">
+        <span class="popup-title" id="popupTitle"></span>
+        <button class="popup-close" id="popupClose" aria-label="Close">&#x2715;</button>
+      </div>
+      <div class="popup-body" id="popupBody"></div>
     </div>
     <script src="https://cdn.jsdelivr.net/npm/three@0.155.0/examples/js/loaders/GLTFLoader.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/three@0.155.0/examples/js/loaders/OBJLoader.js"></script>
