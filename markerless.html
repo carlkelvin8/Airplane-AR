@@ -24,7 +24,7 @@
       <div class="title"><img src="asset/airplane.png" alt="Aircraft Logo"> AR Aircraft</div>
     </div>
     <div id="startOverlay">
-      <button id="startArBtn" class="title start-btn"><img src="asset/airplane.png" alt="Aircraft Logo"> Start AR Aircraft</button>
+      <button id="startArBtn" onclick="window.__startAR && window.__startAR()" class="title start-btn"><img src="asset/airplane.png" alt="Aircraft Logo"> Start AR Aircraft</button>
     </div>
     <div id="unsupported" class="unsupported"><div><h2>Markerless AR not available</h2><p>Use Chrome on Android with HTTPS, or open on localhost.</p></div></div>
   </div>
@@ -75,11 +75,10 @@
     import { OBJLoader } from 'https://cdn.jsdelivr.net/npm/three@0.155.0/examples/jsm/loaders/OBJLoader.js';
     import { GLTFLoader } from 'https://cdn.jsdelivr.net/npm/three@0.155.0/examples/jsm/loaders/GLTFLoader.js';
     import { RGBELoader } from 'https://cdn.jsdelivr.net/npm/three@0.155.0/examples/jsm/loaders/RGBELoader.js';
+    console.log('[AR] Module imports loaded OK');
 
     let DeviceOrientationControls = null;
-    try {
-      ({ DeviceOrientationControls } = await import('https://cdn.jsdelivr.net/npm/three@0.155.0/examples/jsm/controls/DeviceOrientationControls.js'));
-    } catch(e) { console.warn('DeviceOrientationControls not available', e); }
+    // DeviceOrientationControls removed in Three.js r134+, skip import
 
     // ===== GLOBALS =====
     const WORLD_SPAWN_DISTANCE = 8;
@@ -91,6 +90,8 @@
     let activeObject = null;
     let anchorBase = null;
     let nonXrControls = null;
+    let propellers = [];
+    let autoRotate = true;
     const labelSprites = [];
     const labelLines = [];
     const overlayMeshes = [];
@@ -113,19 +114,27 @@
     const virtualCam = new THREE.Object3D();
     scene.add(virtualCam);
 
-    // Lights
-    scene.add(new THREE.HemisphereLight(0xffffff, 0x444444, 1));
-    const dirLight = new THREE.DirectionalLight(0xffffff, 0.9);
-    dirLight.position.set(1, 2, 1);
+    // Lights - improved for PBR materials
+    scene.add(new THREE.HemisphereLight(0xddeeff, 0x334455, 1.2));
+    const dirLight = new THREE.DirectionalLight(0xffffff, 1.5);
+    dirLight.position.set(3, 5, 4);
     scene.add(dirLight);
+    const fillLight = new THREE.DirectionalLight(0x8899bb, 0.6);
+    fillLight.position.set(-2, 1, -3);
+    scene.add(fillLight);
+    const rimLight = new THREE.DirectionalLight(0xffffff, 0.4);
+    rimLight.position.set(0, -2, -5);
+    scene.add(rimLight);
 
-    // HDR environment
-    try {
-      const pmrem = new THREE.PMREMGenerator(renderer);
-      const hdr = await new RGBELoader().loadAsync('https://cdn.jsdelivr.net/gh/pmndrs/drei-assets@master/hdri/venice_sunset_1k.hdr');
-      scene.environment = pmrem.fromEquirectangular(hdr).texture;
-      hdr.dispose(); pmrem.dispose();
-    } catch(e) { console.warn('HDR env failed', e); }
+    // HDR environment (non-blocking)
+    (async () => {
+      try {
+        const pmrem = new THREE.PMREMGenerator(renderer);
+        const hdr = await new RGBELoader().loadAsync('https://cdn.jsdelivr.net/gh/pmndrs/drei-assets@master/hdri/venice_sunset_1k.hdr');
+        scene.environment = pmrem.fromEquirectangular(hdr).texture;
+        hdr.dispose(); pmrem.dispose();
+      } catch(e) { console.warn('HDR env failed', e); }
+    })();
 
     // ===== PART DESCRIPTIONS =====
     const PART_DESCRIPTIONS = {
@@ -213,11 +222,42 @@
         }
       }
 
-      // Color the model
+      // Color the model with realistic airline livery
+      const modelBox = new THREE.Box3().setFromObject(model);
+      const modelSize = new THREE.Vector3(); modelBox.getSize(modelSize);
+      const modelCenter = new THREE.Vector3(); modelBox.getCenter(modelCenter);
+
       model.traverse(o => {
         if (o.isMesh) {
           o.castShadow = true; o.receiveShadow = true;
-          o.material = new THREE.MeshPhongMaterial({ color: AIRCRAFT_COLOR, specular: 0xffffff, shininess: 50 });
+          try {
+            const meshBox = new THREE.Box3().setFromObject(o);
+            const mCenter = new THREE.Vector3(); meshBox.getCenter(mCenter);
+            const mSize = new THREE.Vector3(); meshBox.getSize(mSize);
+
+            // Vertical tail fin
+            if (mSize.y > modelSize.y * 0.3 && mCenter.z < modelCenter.z - modelSize.z * 0.2) {
+              o.material = new THREE.MeshStandardMaterial({ color: 0x1a2e6b, roughness: 0.3, metalness: 0.1 });
+            }
+            // Wings (very wide)
+            else if (mSize.x > modelSize.x * 0.4) {
+              o.material = new THREE.MeshStandardMaterial({ color: 0xcdd5de, roughness: 0.3, metalness: 0.2 });
+            }
+            // Engines (small, offset, below)
+            else if (Math.abs(mCenter.x) > modelSize.x * 0.1 && mCenter.y < modelCenter.y && mSize.z < modelSize.z * 0.15) {
+              o.material = new THREE.MeshStandardMaterial({ color: 0x3a3f4a, roughness: 0.2, metalness: 0.7 });
+            }
+            // Nose (front)
+            else if (mCenter.z > modelCenter.z + modelSize.z * 0.3) {
+              o.material = new THREE.MeshStandardMaterial({ color: 0x1e3264, roughness: 0.25, metalness: 0.1 });
+            }
+            // Fuselage (default)
+            else {
+              o.material = new THREE.MeshStandardMaterial({ color: 0xf5f7fa, roughness: 0.3, metalness: 0.05 });
+            }
+          } catch(_) {
+            o.material = new THREE.MeshStandardMaterial({ color: 0xf5f7fa, roughness: 0.3, metalness: 0.05 });
+          }
         }
       });
 
@@ -242,47 +282,17 @@
       // Remove previous activeObject
       if (activeObject) { scene.remove(activeObject); }
 
-      // Add spinning engine fan discs for animation
-      propellers = [];
-      const enginePositions = [];
-      model.traverse(o => {
-        // Detect engine cylinders by their geometry (roughly cylindrical parts at wing level)
-        if (o.isMesh && o.geometry) {
-          const bbox = new THREE.Box3().setFromObject(o);
-          const sz = new THREE.Vector3(); bbox.getSize(sz);
-          // Engines are typically small, round-ish objects below wings
-          if (sz.x > 0 && sz.y > 0 && Math.abs(sz.x - sz.z) < sz.x * 0.5 && sz.y < size.y * 0.3) {
-            const ctr = new THREE.Vector3(); bbox.getCenter(ctr);
-            if (Math.abs(ctr.x) > size.x * 0.1 && ctr.y < center.y) {
-              enginePositions.push(ctr.clone());
-            }
-          }
-        }
-      });
-      // Create fan disc at each engine (max 4)
-      const engPositionsFallback = [
-        new THREE.Vector3(size.x * 0.22, center.y - size.y * 0.22, center.z + size.z * 0.1),
-        new THREE.Vector3(-size.x * 0.22, center.y - size.y * 0.22, center.z + size.z * 0.1),
-      ];
-      const engPos = enginePositions.length >= 2 ? enginePositions.slice(0, 4) : engPositionsFallback;
-      for (const pos of engPos) {
-        const fanGeo = new THREE.CircleGeometry(size.x * 0.025, 8);
-        const fanMat = new THREE.MeshBasicMaterial({ color: 0x88ccff, transparent: true, opacity: 0.4, side: THREE.DoubleSide });
-        const fan = new THREE.Mesh(fanGeo, fanMat);
-        fan.position.copy(pos);
-        fan.rotation.y = Math.PI / 2; // face forward
-        model.add(fan);
-        propellers.push(fan);
-      }
-
-      scene.add(root);
-      activeObject = root;
-      anchorBase = root.position.clone();
-
       // ===== OVERLAYS (control surfaces) =====
       const box = new THREE.Box3().setFromObject(model);
       const size = new THREE.Vector3(); box.getSize(size);
       const center = new THREE.Vector3(); box.getCenter(center);
+
+      // Engine fans (propellers for animation)
+      propellers = [];
+
+      scene.add(root);
+      activeObject = root;
+      anchorBase = root.position.clone();
 
       const blue = new THREE.MeshBasicMaterial({ color: 0x2ea7ff, transparent: true, opacity: 0.85, depthTest: false, depthWrite: false });
       const orange = new THREE.MeshBasicMaterial({ color: 0xffa429, transparent: true, opacity: 0.85, depthTest: false, depthWrite: false });
@@ -479,6 +489,7 @@
     // ===== CAMERA START =====
     async function startCamera() {
       try {
+        if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) return;
         const stream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: 'environment' }, audio: false });
         let vid = document.getElementById('previewVideo');
         if (!vid) {
@@ -492,9 +503,7 @@
         await vid.play();
         window._previewStream = stream;
       } catch (e) {
-        console.warn('Camera error:', e);
-        const unsupported = document.getElementById('unsupported');
-        unsupported.classList.add('active');
+        console.warn('Camera not available:', e);
       }
     }
     window.__startCam = startCamera;
@@ -635,8 +644,6 @@
     let bouncePrev = 0;
     const bounceSpeed = 2.2;
     const bounceAmp = 0.12;
-    let propellers = []; // will hold propeller meshes
-    let autoRotate = true; // slow idle spin
 
     function animate() {
       requestAnimationFrame(animate);
@@ -727,24 +734,23 @@
     const startOverlay = document.getElementById('startOverlay');
     const startArBtn = document.getElementById('startArBtn');
 
-    startArBtn.addEventListener('click', async () => {
+    window.__startAR = async function() {
+      console.log('[AR] Start button clicked');
       startOverlay.style.display = 'none';
-      await startCamera();
-      // Request device orientation permission (iOS)
-      try {
-        if (typeof DeviceOrientationEvent !== 'undefined' && typeof DeviceOrientationEvent.requestPermission === 'function') {
-          await DeviceOrientationEvent.requestPermission();
-        }
-      } catch(_) {}
-      if (DeviceOrientationControls) {
-        nonXrControls = new DeviceOrientationControls(virtualCam);
-        nonXrControls.connect();
+      try { await startCamera(); } catch(e) { console.warn('[AR] camera skip:', e); }
+      try { 
+        await load3dAircraft(); 
+      } catch(e) { 
+        console.error('[AR] load3dAircraft failed:', e); 
       }
-      await load3dAircraft();
-    });
+    };
+
+    startArBtn.addEventListener('click', window.__startAR);
 
     // Mark module as ready so no fallback script runs
     window.__moduleReady = true;
+    console.log('[AR] Module fully initialized, button ready');
   </script>
 </body>
 </html>
+3
