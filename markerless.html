@@ -1,1947 +1,750 @@
 <!doctype html>
 <html lang="en">
-  <head>
-    <meta charset="utf-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
-    <title>AR Aircraft</title>
-    <link rel="icon" type="image/x-icon" href="asset/favicon.ico">
-    <style>
-      html, body { margin:0; height:100%; background:#000; color:#fff; font-family:system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial, sans-serif }
-      #app { position:fixed; inset:0 }
-      .overlay { position:fixed; top:0; left:0; right:0; display:flex; justify-content:space-between; align-items:center; padding:10px 12px; background:linear-gradient(to bottom, rgba(0,0,0,.55), rgba(0,0,0,0)); z-index:1000; pointer-events:none }
-      .title { font-weight:600; font-size:16px }
-      .hint { font-size:12px; opacity:.9 }
-      .unsupported { position:absolute; inset:0; display:none; align-items:center; justify-content:center; text-align:center; padding:24px; background:#0a0a0a }
-      .unsupported.active { display:flex }
-      .btn { position:fixed; bottom:12px; left:50%; transform:translateX(-50%); background:rgba(255,255,255,.15); border:1px solid rgba(255,255,255,.3); color:#fff; padding:10px 14px; border-radius:10px; z-index:2000; cursor:pointer; pointer-events:auto }
-      /* ===== FULL START OVERLAY ===== */
-      #startOverlay { position:fixed; inset:0; display:flex; align-items:center; justify-content:center; background:rgba(0,0,0,0.92); z-index:3000 }
-      .start-btn { cursor:pointer; pointer-events:auto; padding:14px 18px; border:none }
-      /* ===== TITLE STYLES ===== */
-      .title {
-        background: linear-gradient(135deg, #0044cc, #00aaff); /* Gradient color (blue to light blue) */
-        color: white; /* Text color */
-        font-size: 1.2rem; /* Smaller font size */
-        font-weight: bold; /* Bold the text */
-        padding: 8px 12px; /* Further reduce padding */
-        text-align: center; /* Center the text */
-        border-radius: 8px; /* Rounded corners for the background */
-        font-family: 'Arial', sans-serif; /* Font family */
-        text-shadow: 2px 2px 6px rgba(0, 0, 0, 0.3); /* Adds a subtle shadow for readability */
-        margin: 8px; /* Reduce margin */
-        display: flex;
-        align-items: center;
-        justify-content: center;
-      }
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
+  <title>AR Aircraft</title>
+  <link rel="icon" type="image/x-icon" href="asset/favicon.ico">
+  <style>
+    html, body { margin:0; height:100%; background:#000; color:#fff; font-family:system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial, sans-serif; overflow:hidden }
+    #app { position:fixed; inset:0 }
+    .overlay { position:fixed; top:0; left:0; right:0; display:flex; justify-content:space-between; align-items:center; padding:10px 12px; background:linear-gradient(to bottom, rgba(0,0,0,.55), rgba(0,0,0,0)); z-index:1000; pointer-events:none }
+    .title { background: linear-gradient(135deg, #0044cc, #00aaff); color: white; font-size: 1.2rem; font-weight: bold; padding: 8px 12px; text-align: center; border-radius: 8px; font-family: 'Arial', sans-serif; text-shadow: 2px 2px 6px rgba(0,0,0,0.3); margin: 8px; display: flex; align-items: center; justify-content: center; }
+    .title img { height: 20px; margin-right: 4px; }
+    .unsupported { position:absolute; inset:0; display:none; align-items:center; justify-content:center; text-align:center; padding:24px; background:#0a0a0a; z-index:500 }
+    .unsupported.active { display:flex }
+    .btn { background:rgba(255,255,255,.15); border:1px solid rgba(255,255,255,.3); color:#fff; padding:10px 14px; border-radius:10px; z-index:2000; cursor:pointer; pointer-events:auto; font-size:14px }
+    #startOverlay { position:fixed; inset:0; display:flex; align-items:center; justify-content:center; background:rgba(0,0,0,0.92); z-index:3000 }
+    .start-btn { cursor:pointer; pointer-events:auto; padding:14px 18px; border:none }
+</style>
+</head>
+<body>
+  <div id="app">
+    <div id="overlay" class="overlay">
+      <div class="title"><img src="asset/airplane.png" alt="Aircraft Logo"> AR Aircraft</div>
+    </div>
+    <div id="startOverlay">
+      <button id="startArBtn" class="title start-btn"><img src="asset/airplane.png" alt="Aircraft Logo"> Start AR Aircraft</button>
+    </div>
+    <div id="unsupported" class="unsupported"><div><h2>Markerless AR not available</h2><p>Use Chrome on Android with HTTPS, or open on localhost.</p></div></div>
+  </div>
 
-      .title img {
-        height: 20px; /* Smaller logo size */
-        margin-right: 4px; /* Reduce space between the logo and text */
-      }
+  <!-- Part Description Popup -->
+  <div id="partPopupOverlay" style="display:none;position:fixed;inset:0;z-index:9998;background:rgba(0,0,0,0.35)"></div>
+  <div id="partPopup" role="dialog" aria-modal="true" aria-labelledby="popupTitle" style="display:none;position:fixed;top:50%;left:50%;transform:translate(-50%,-50%);background:rgba(10,15,30,0.97);border:1px solid rgba(100,180,255,0.35);border-radius:16px;padding:20px;max-width:min(340px,88vw);width:100%;z-index:9999;color:#fff;font-family:system-ui">
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px">
+      <span id="popupTitle" style="font-size:1rem;font-weight:700;color:#7ec8ff;text-transform:uppercase"></span>
+      <button id="popupClose" style="background:rgba(255,255,255,0.1);border:1px solid rgba(255,255,255,0.2);color:#fff;border-radius:50%;width:28px;height:28px;font-size:16px;cursor:pointer;display:flex;align-items:center;justify-content:center" aria-label="Close">&#x2715;</button>
+    </div>
+    <div id="popupBody" style="font-size:0.88rem;line-height:1.6;color:rgba(255,255,255,0.88)"></div>
+  </div>
 
-      /* Media Query for responsiveness */
-      @media (max-width: 768px) {
-        .title {
-          font-size: 1rem; /* Even smaller font size for mobile devices */
-          padding: 6px 10px; /* Adjust padding for mobile */
-        }
-        .title img {
-          height: 18px; /* Even smaller logo size for mobile screens */
-        }
-      }
-          /* ===== D-PAD STYLES ===== */
-    .dpad {
-      position: fixed;
-      right: 16px;
-      bottom: 16px;
-      width: clamp(96px, 28vw, 160px);
-      height: clamp(96px, 28vw, 160px);
-      z-index: 2000;
-      touch-action: none;
-    }
-
-    .dpad-grid {
-      display: grid;
-      grid-template-columns: repeat(3, 1fr);
-      grid-template-rows: repeat(3, 1fr);
-      width: 100%;
-      height: 100%;
-    }
-
+  <style>
+    /* D-PAD */
+    .dpad { position:fixed; width:clamp(96px,28vw,160px); height:clamp(96px,28vw,160px); z-index:2000; touch-action:none }
+    .dpad-grid { display:grid; grid-template-columns:repeat(3,1fr); grid-template-rows:repeat(3,1fr); width:100%; height:100% }
     .dpad-btn { place-self:center; width:100%; height:100%; border:none; background:transparent; z-index:1 }
-    .dpad-cross { position:relative; pointer-events:none; z-index:0 }
-    .dpad-cross::before {
-      content:""; position:absolute; top:0; left:0; right:0; bottom:0;
-      background:#bab4aa;
-      clip-path: polygon(
-        0% 35%, 35% 35%, 35% 0%, 65% 0%, 65% 35%, 100% 35%,
-        100% 65%, 65% 65%, 65% 100%, 35% 100%, 35% 65%, 0% 65%
-      );
-      border-radius:5px;
+    .dpad-cross { position:relative; pointer-events:none; z-index:0; grid-column:1/4; grid-row:1/4 }
+    .dpad-cross::before { content:""; position:absolute; inset:0; background:#bab4aa; clip-path:polygon(0% 35%,35% 35%,35% 0%,65% 0%,65% 35%,100% 35%,100% 65%,65% 65%,65% 100%,35% 100%,35% 65%,0% 65%); border-radius:5px }
+    .dpad-cross::after { content:""; position:absolute; top:4px; left:4px; right:4px; bottom:4px; background:linear-gradient(#3a4055,#202636); clip-path:polygon(0% 35%,35% 35%,35% 0%,65% 0%,65% 35%,100% 35%,100% 65%,65% 65%,65% 100%,35% 100%,35% 65%,0% 65%); border-radius:5px; box-shadow:0 2px 8px rgba(0,0,0,0.35) inset }
+    .dpad-center { place-self:center; width:26%; height:26%; border-radius:999px; background:#171c29; box-shadow:0 5px 0 0 #070a13 inset; grid-column:2; grid-row:2; pointer-events:none }
+    .dpad-btn:active { transform:scale(0.95) }
+    /* TOP CONTROLS */
+    .top-controls { position:fixed; bottom:12px; left:50%; transform:translateX(-50%); display:flex; gap:10px; align-items:center; z-index:2100 }
+    .control-btn { width:clamp(38px,9vw,44px); height:clamp(38px,9vw,44px); border-radius:50%; border:none; background:linear-gradient(145deg,#2b2b2b,#111); color:white; font-size:18px; display:grid; place-items:center; cursor:pointer }
+    /* MENU */
+    .menu-btn { position:fixed; top:16px; right:16px; width:44px; height:44px; border-radius:50%; border:none; background:linear-gradient(145deg,#2b2b2b,#111); box-shadow:inset 2px 2px 4px rgba(255,255,255,0.15),inset -2px -2px 4px rgba(0,0,0,0.6),0 4px 10px rgba(0,0,0,0.5); display:grid; place-items:center; z-index:2100; cursor:pointer }
+    .menu-bars { width:22px; height:16px; display:grid; gap:4px }
+    .menu-bar { height:2px; background:rgba(255,255,255,0.9); border-radius:2px; transition:0.3s ease }
+    .menu-btn.active .menu-bar:nth-child(1) { transform:translateY(6px) rotate(45deg) }
+    .menu-btn.active .menu-bar:nth-child(2) { opacity:0 }
+    .menu-btn.active .menu-bar:nth-child(3) { transform:translateY(-6px) rotate(-45deg) }
+    .menu-dropdown { position:fixed; top:70px; right:16px; min-width:200px; background:rgba(20,20,20,0.97); border:1px solid rgba(255,255,255,0.2); border-radius:12px; padding:6px; z-index:99999; opacity:0; transform:translateY(-10px) scale(0.98); visibility:hidden; transition:opacity 0.25s ease,transform 0.25s ease,visibility 0.25s }
+    .menu-dropdown.show { opacity:1; transform:translateY(0) scale(1); visibility:visible }
+    .menu-item { padding:10px 12px; border-radius:8px; cursor:pointer; color:white }
+    .menu-item:hover { background:rgba(255,255,255,0.08) }
+    @media (max-width:768px) { .top-controls { bottom:100px; left:40%; } .title { font-size:1rem; padding:6px 10px } .title img { height:18px } }
+    @media (orientation:landscape) { .top-controls { bottom:12px; left:50%; gap:15px } }
+  </style>
+
+  <script type="importmap">
+    { "imports": { "three": "https://cdn.jsdelivr.net/npm/three@0.155.0/build/three.module.js" } }
+  </script>
+  <script type="module">
+    import * as THREE from 'three';
+    import { OBJLoader } from 'https://cdn.jsdelivr.net/npm/three@0.155.0/examples/jsm/loaders/OBJLoader.js';
+    import { GLTFLoader } from 'https://cdn.jsdelivr.net/npm/three@0.155.0/examples/jsm/loaders/GLTFLoader.js';
+    import { RGBELoader } from 'https://cdn.jsdelivr.net/npm/three@0.155.0/examples/jsm/loaders/RGBELoader.js';
+
+    let DeviceOrientationControls = null;
+    try {
+      ({ DeviceOrientationControls } = await import('https://cdn.jsdelivr.net/npm/three@0.155.0/examples/jsm/controls/DeviceOrientationControls.js'));
+    } catch(e) { console.warn('DeviceOrientationControls not available', e); }
+
+    // ===== GLOBALS =====
+    const WORLD_SPAWN_DISTANCE = 8;
+    const DESIRED_LENGTH_M = 64;
+    const AIRCRAFT_COLOR = 0xE1F1FD;
+    const SPAWN_ROT_X = 0.5;
+    const SPAWN_ROT_Y = -0.25;
+
+    let activeObject = null;
+    let anchorBase = null;
+    let nonXrControls = null;
+    const labelSprites = [];
+    const labelLines = [];
+    const overlayMeshes = [];
+
+    // ===== RENDERER =====
+    const renderer = new THREE.WebGLRenderer({ antialias:true, alpha:true });
+    renderer.setPixelRatio(window.devicePixelRatio);
+    renderer.setSize(window.innerWidth, window.innerHeight);
+    renderer.setClearColor(0x000000, 0);
+    renderer.toneMapping = THREE.ACESFilmicToneMapping;
+    renderer.toneMappingExposure = 1.0;
+    renderer.outputColorSpace = THREE.SRGBColorSpace;
+    renderer.domElement.style.position = 'fixed';
+    renderer.domElement.style.inset = '0';
+    renderer.domElement.style.zIndex = '2';
+    document.body.appendChild(renderer.domElement);
+
+    const scene = new THREE.Scene();
+    const camera = new THREE.PerspectiveCamera(70, window.innerWidth / window.innerHeight, 0.01, 1000);
+    const virtualCam = new THREE.Object3D();
+    scene.add(virtualCam);
+
+    // Lights
+    scene.add(new THREE.HemisphereLight(0xffffff, 0x444444, 1));
+    const dirLight = new THREE.DirectionalLight(0xffffff, 0.9);
+    dirLight.position.set(1, 2, 1);
+    scene.add(dirLight);
+
+    // HDR environment
+    try {
+      const pmrem = new THREE.PMREMGenerator(renderer);
+      const hdr = await new RGBELoader().loadAsync('https://cdn.jsdelivr.net/gh/pmndrs/drei-assets@master/hdri/venice_sunset_1k.hdr');
+      scene.environment = pmrem.fromEquirectangular(hdr).texture;
+      hdr.dispose(); pmrem.dispose();
+    } catch(e) { console.warn('HDR env failed', e); }
+
+    // ===== PART DESCRIPTIONS =====
+    const PART_DESCRIPTIONS = {
+      'AILERONS': 'Located on the outer part of each wing. They control the roll of the aircraft by moving up on one wing and down on the other, causing the airplane to tilt left or right.',
+      'ELEVATORS': 'Found on the horizontal tail (horizontal stabilizer). It controls the pitch of the aircraft, allowing the nose to move up or down.',
+      'RUDDER': "Positioned on the vertical tail (vertical stabilizer). It controls the yaw, which moves the aircraft's nose left or right.",
+      'FLAPS': 'Located on the inner section of the wings. They increase lift and drag, helping the aircraft during takeoff and landing by allowing slower flight speeds.',
+      'SLATS': 'Installed on the front edge of the wings. They improve lift at low speeds and help prevent stalling during takeoff and landing.',
+      'SPOILERS': 'Panels on the top of the wings that reduce lift and increase drag. They are used to help the aircraft descend faster or slow down after landing.',
+    };
+
+    // ===== LABEL FACTORY =====
+    function makeLabel(text, color) {
+      const canvas = document.createElement('canvas');
+      canvas.width = 512; canvas.height = 128;
+      const ctx = canvas.getContext('2d');
+      ctx.clearRect(0, 0, canvas.width, canvas.height);
+      const radius = 16;
+      ctx.fillStyle = 'rgba(0,0,0,0.85)';
+      ctx.beginPath();
+      ctx.moveTo(radius, 0); ctx.lineTo(canvas.width - radius, 0);
+      ctx.quadraticCurveTo(canvas.width, 0, canvas.width, radius);
+      ctx.lineTo(canvas.width, canvas.height - radius);
+      ctx.quadraticCurveTo(canvas.width, canvas.height, canvas.width - radius, canvas.height);
+      ctx.lineTo(radius, canvas.height);
+      ctx.quadraticCurveTo(0, canvas.height, 0, canvas.height - radius);
+      ctx.lineTo(0, radius);
+      ctx.quadraticCurveTo(0, 0, radius, 0);
+      ctx.closePath(); ctx.fill();
+      ctx.fillStyle = color || '#ffffff';
+      ctx.font = 'bold 56px system-ui, -apple-system, Segoe UI, Roboto, Arial';
+      ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+      ctx.fillText(String(text).toUpperCase(), canvas.width / 2, canvas.height / 2);
+      const tex = new THREE.CanvasTexture(canvas);
+      const mat = new THREE.SpriteMaterial({ map: tex, transparent: true, depthTest: false, depthWrite: false, sizeAttenuation: false });
+      const spr = new THREE.Sprite(mat);
+      spr.userData.texSize = { w: canvas.width, h: canvas.height };
+      spr.renderOrder = 10000;
+      spr.scale.set(2.4, 0.6, 1);
+      labelSprites.push(spr);
+      return spr;
     }
-    .dpad-cross::after {
-      content:""; position:absolute; top:4px; left:4px; right:4px; bottom:4px;
-      background: linear-gradient(#3a4055, #202636);
-      clip-path: polygon(
-        0% 35%, 35% 35%, 35% 0%, 65% 0%, 65% 35%, 100% 35%,
-        100% 65%, 65% 65%, 65% 100%, 35% 100%, 35% 65%, 0% 65%
-      );
-      border-radius:5px;
-      box-shadow: 0 2px 8px rgba(0,0,0,0.35) inset;
+
+    function setLabelsVisible(show) {
+      for (const s of labelSprites) if (s) s.visible = !!show;
+      for (const l of labelLines) if (l) l.visible = !!show;
+      for (const m of overlayMeshes) if (m) m.visible = !!show;
     }
-    .dpad-center { place-self:center; width:26%; height:26%; border-radius:999px; background:#171c29; box-shadow:0 5px 0 0 #070a13 inset; grid-column:2; grid-row:2; pointer-events:none; position:relative }
-    .dpad-center::after { content:""; position:absolute; left:50%; bottom:14%; transform:translateX(-50%); width:40%; height:22%; border-radius:50%; background:#3a4055 }
-    .dpad-btn:active { transform: scale(0.95) }
 
-  /* ===== ZOOM IN BUTTON ===== */
-  .zoom-btn {
-    position: fixed;
-    right: 16px;
-    width: 44px;
-    height: 44px;
-    border-radius: 50%;
-    border: none;
-    background: linear-gradient(145deg, #2b2b2b, #111);
-    box-shadow:
-      inset 2px 2px 4px rgba(255,255,255,0.15),
-      inset -2px -2px 4px rgba(0,0,0,0.6),
-      0 4px 10px rgba(0,0,0,0.5);
-    z-index: 2000;
-  }
-.top-controls {
-  position: fixed;
-  bottom: 12px;
-  left: 50%;
-  transform: translateX(-50%);
-  display: flex;
-  gap: 10px;
-  align-items: center;
-  z-index: 2100;
-}
+    function addCallout(model, target, text, offset) {
+      const spr = makeLabel(String(text).toUpperCase(), '#ffffff');
+      spr.scale.set(1.1, 0.28, 1);
+      const labelPos = target.position.clone().add(offset || new THREE.Vector3(0, 0.22, 0));
+      spr.position.copy(labelPos);
+      spr.renderOrder = 10000;
+      spr.userData.partKey = String(text).toUpperCase();
+      spr.userData.isPartLabel = true;
+      const geom = new THREE.BufferGeometry().setFromPoints([target.position.clone(), labelPos.clone()]);
+      const lineMat = new THREE.LineBasicMaterial({ color: 0xffffff, transparent: true, opacity: 0.95, depthTest: false, depthWrite: false });
+      const line = new THREE.Line(geom, lineMat);
+      line.renderOrder = 9999;
+      model.add(spr);
+      model.add(line);
+      labelLines.push(line);
+    }
 
-/* Media Query for Mobile/Tablets */
-@media (max-width: 768px) {
-  .top-controls {
-  position: fixed;
-  bottom: 100px;
-  left: 40%;
-  transform: translateX(-50%);
-  display: flex;
-  gap: 10px;
-  align-items: center;
-  z-index: 2100;
-  }
-}
-@media (orientation: landscape) {
-  .top-controls {
-    position: fixed;
-    bottom: 12px;
-    left: 50%;
-    transform: translateX(-50%);
-    display: flex;
-    gap: 15px; /* Adjust gap for landscape */
-    align-items: center;
-    z-index: 2100;
-  }
-}
-
-.control-btn {
-  width: clamp(38px, 9vw, 44px);
-  height: clamp(38px, 9vw, 44px);
-  border-radius: 50%;
-  border: none;
-  background: linear-gradient(145deg, #2b2b2b, #111);
-  color: white;
-  font-size: 18px;
-  display: grid;
-  place-items: center;
-  cursor: pointer;
-}
-
-  /* ===== MENU BUTTON ===== */
-  .menu-btn {
-    position: fixed;
-    top: 16px;
-    right: 16px;
-    width: 44px;
-    height: 44px;
-    border-radius: 50%;
-    border: none;
-    background: linear-gradient(145deg, #2b2b2b, #111);
-    box-shadow:
-      inset 2px 2px 4px rgba(255,255,255,0.15),
-      inset -2px -2px 4px rgba(0,0,0,0.6),
-      0 4px 10px rgba(0,0,0,0.5);
-    display: grid;
-    place-items: center;
-    z-index: 2100;
-    cursor: pointer;
-  }
-
-  /* Hamburger */
-  .menu-bars {
-    width: 22px;
-    height: 16px;
-    display: grid;
-    gap: 4px;
-  }
-
-  .menu-bar {
-    height: 2px;
-    background: rgba(255,255,255,0.9);
-    border-radius: 2px;
-    transition: 0.3s ease;
-  }
-
-  /* Animate to X */
-  .menu-btn.active .menu-bar:nth-child(1) {
-    transform: translateY(6px) rotate(45deg);
-  }
-  .menu-btn.active .menu-bar:nth-child(2) {
-    opacity: 0;
-  }
-  .menu-btn.active .menu-bar:nth-child(3) {
-    transform: translateY(-6px) rotate(-45deg);
-  }
-
-  /* ===== DROPDOWN MENU ===== */
-.menu-dropdown {
-  position: fixed;
-  top: 70px;
-  right: 16px;
-  min-width: 200px;
-  background: rgba(20,20,20,0.97);
-  border: 1px solid rgba(255,255,255,0.2);
-  border-radius: 12px;
-  padding: 6px;
-  z-index: 99999;
-
-  opacity: 0;
-  transform: translateY(-10px) scale(0.98);
-  visibility: hidden;
-  transition: opacity 0.25s ease, transform 0.25s ease, visibility 0.25s;
-}
-
-.menu-dropdown.show {
-  opacity: 1;
-  transform: translateY(0) scale(1);
-  visibility: visible;
-}
-
-.menu-item {
-  padding: 10px 12px;
-  border-radius: 8px;
-  cursor: pointer;
-  color: white;
-}
-
-.menu-item:hover {
-  background: rgba(255,255,255,0.08);
-}
-
-/* ===== PART DESCRIPTION POPUP ===== */
-#partPopup {
-  display: none;
-  position: fixed;
-  top: 50%;
-  left: 50%;
-  transform: translate(-50%, -50%);
-  background: rgba(10, 15, 30, 0.97);
-  border: 1px solid rgba(100, 180, 255, 0.35);
-  border-radius: 16px;
-  padding: 20px 20px 18px;
-  max-width: min(340px, 88vw);
-  width: 100%;
-  z-index: 9999;
-  box-shadow: 0 8px 32px rgba(0,0,0,0.7);
-  color: #fff;
-  font-family: system-ui, -apple-system, Segoe UI, Roboto, Arial, sans-serif;
-}
-#partPopup.visible { display: block; }
-#partPopup .popup-header {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  margin-bottom: 10px;
-}
-#partPopup .popup-title {
-  font-size: 1rem;
-  font-weight: 700;
-  letter-spacing: 0.08em;
-  color: #7ec8ff;
-  text-transform: uppercase;
-}
-#partPopup .popup-close {
-  background: rgba(255,255,255,0.1);
-  border: 1px solid rgba(255,255,255,0.2);
-  color: #fff;
-  border-radius: 50%;
-  width: 28px;
-  height: 28px;
-  font-size: 16px;
-  cursor: pointer;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  flex-shrink: 0;
-  line-height: 1;
-}
-#partPopup .popup-close:hover { background: rgba(255,255,255,0.2); }
-#partPopup .popup-body {
-  font-size: 0.88rem;
-  line-height: 1.6;
-  color: rgba(255,255,255,0.88);
-}
-#partPopupOverlay {
-  display: none;
-  position: fixed;
-  inset: 0;
-  z-index: 9998;
-  background: rgba(0,0,0,0.35);
-}
-#partPopupOverlay.visible { display: block; }
-
-    </style>
-    <script type="importmap">
-      {
-        "imports": {
-          "three": "https://cdn.jsdelivr.net/npm/three@0.155.0/build/three.module.js"
+    // ===== LOAD 3D AIRCRAFT =====
+    async function load3dAircraft() {
+      let model = null;
+      const objUrl = 'https://assets.codepen.io/557388/1405+Plane_1.obj';
+      const objLoader = new OBJLoader();
+      try {
+        const resp = await fetch(objUrl, { mode: 'cors' });
+        const text = await resp.text();
+        model = objLoader.parse(text);
+      } catch (e1) {
+        console.warn('OBJ fetch failed, trying GLB fallback', e1);
+        try {
+          const gltfLoader = new GLTFLoader();
+          const gltf = await gltfLoader.loadAsync('https://raw.githubusercontent.com/KhronosGroup/glTF-Sample-Models/master/2.0/CesiumAir/glTF-Binary/CesiumAir.glb');
+          model = gltf.scene;
+        } catch (e2) {
+          console.error('All model loads failed', e2);
+          return;
         }
       }
-    </script>
-    <script type="module">
-      import * as THREE from 'https://cdn.jsdelivr.net/npm/three@0.155.0/build/three.module.js';
-      import { ARButton } from 'https://cdn.jsdelivr.net/npm/three@0.155.0/examples/jsm/webxr/ARButton.js';
-      import { RGBELoader } from 'https://cdn.jsdelivr.net/npm/three@0.155.0/examples/jsm/loaders/RGBELoader.js';
-      import { OBJLoader } from 'https://cdn.jsdelivr.net/npm/three@0.155.0/examples/jsm/loaders/OBJLoader.js';
-      window.THREE = THREE;
-      let DeviceOrientationControls = null;
-      let OrbitControls = null;
-      try {
-        ({ DeviceOrientationControls } = await import('https://cdn.jsdelivr.net/npm/three@0.155.0/examples/jsm/controls/DeviceOrientationControls.js'));
-      } catch (e) {
-        console.warn('DeviceOrientationControls import failed', e);
-      }
-      try {
-        ({ OrbitControls } = await import('https://cdn.jsdelivr.net/npm/three@0.155.0/examples/jsm/controls/OrbitControls.js'));
-      } catch (e) {
-        console.warn('OrbitControls import failed', e);
-      }
-      const { GLTFLoader } = await import('https://cdn.jsdelivr.net/npm/three@0.155.0/examples/jsm/loaders/GLTFLoader.js');
 
-      const overlay = document.getElementById('overlay');
-      const unsupported = document.getElementById('unsupported');
-      const unsupportedMsg = unsupported.querySelector('div');
-
-      const renderer = new THREE.WebGLRenderer({ antialias:true, alpha:true });
-      renderer.setPixelRatio(window.devicePixelRatio);
-      renderer.setSize(window.innerWidth, window.innerHeight);
-      renderer.xr.enabled = true;
-      renderer.setClearColor(0x000000, 0);
-      renderer.toneMapping = THREE.ACESFilmicToneMapping;
-      renderer.toneMappingExposure = 1.0;
-      renderer.outputColorSpace = THREE.SRGBColorSpace;
-      document.body.appendChild(renderer.domElement);
-
-      const scene = new THREE.Scene();
-      const camera = new THREE.PerspectiveCamera(70, window.innerWidth / window.innerHeight, 0.01, 1000);
-      const virtualCam = new THREE.Object3D();
-      scene.add(virtualCam);
-      const cameraTargetPos = new THREE.Vector3(0, 0, 0);
-      let followDevice = true;
-      let leftAnalogMode = false;
-
-      const hemi = new THREE.HemisphereLight(0xffffff, 0x444444, 1);
-      scene.add(hemi);
-      const dir = new THREE.DirectionalLight(0xffffff, 0.9);
-      dir.position.set(1,2,1);
-      scene.add(dir);
-      try {
-        const pmrem = new THREE.PMREMGenerator(renderer);
-        const hdr = await new RGBELoader().loadAsync('https://cdn.jsdelivr.net/gh/pmndrs/drei-assets@master/hdri/venice_sunset_1k.hdr');
-        const env = pmrem.fromEquirectangular(hdr).texture;
-        scene.environment = env;
-        hdr.dispose();
-        pmrem.dispose();
-      } catch(e) { console.warn('HDR env load failed', e); }
-      const labelSprites = [];
-      const labelLines = [];
-      const overlayMeshes = [];
-      let activeObject = null;
-      let nonXrControls = null;
-
-      const WORLD_SPAWN_DISTANCE = 8;
-      const MODEL_SCALE = 1;
-      const DESIRED_LENGTH_M = 64;
-      const AIRCRAFT_COLOR = 0xE1F1FD;
-      //======== DEFAULT ROTATE POSITION AIRCRAFT ======//
-      // Up/Down rotation (pitch): X & Y
-      const SPAWN_ROT_UPDOWN_X = 0.5;
-      const SPAWN_ROT_UPDOWN_Y = -0.25;
-      // Left/Right rotation (yaw): X & Y
-      const SPAWN_ROT_LEFTRIGHT_X = 0.00;
-      const SPAWN_ROT_LEFTRIGHT_Y = 0.00;
-      const button = null;
-      const startCamBtn = document.getElementById('startCam');
-      let __startHandler = null;
-      const fallbackBtn = document.createElement('button');
-      fallbackBtn.id = 'fallbackAR';
-      fallbackBtn.className = 'btn';
-      fallbackBtn.style.bottom = '156px';
-      fallbackBtn.textContent = 'Open AR (Scene Viewer)';
-      document.body.appendChild(fallbackBtn);
-      const placeBtn = document.createElement('button');
-      placeBtn.id = 'placePlane';
-      placeBtn.className = 'btn';
-      placeBtn.style.bottom = '108px';
-      placeBtn.textContent = 'Place Aircraft';
-      document.body.appendChild(placeBtn);
-      const load3dBtn = document.createElement('button');
-      load3dBtn.id = 'load3d';
-      load3dBtn.className = 'btn';
-      load3dBtn.style.bottom = '252px';
-      load3dBtn.textContent = 'Load 3D Aircraft';
-      document.body.appendChild(load3dBtn);
-      const resetBtn = document.createElement('button');
-      resetBtn.id = 'resetScene';
-      resetBtn.className = 'btn';
-      resetBtn.style.bottom = '204px';
-      resetBtn.textContent = 'Reset';
-      document.body.appendChild(resetBtn);
-      const zoomInBtn = document.createElement('button');
-      zoomInBtn.className = 'btn';
-      zoomInBtn.style.top = '8px';  // Move the button up (adjust as needed)
-      zoomInBtn.style.left = '16px';  // Keep the button on the left
-      zoomInBtn.style.width = '30px';
-      zoomInBtn.style.height = '30px';
-      zoomInBtn.style.borderRadius = '22px';
-      zoomInBtn.style.transform = 'none';
-      zoomInBtn.style.display = 'flex';
-      zoomInBtn.style.justifyContent = 'center';
-      zoomInBtn.style.alignItems = 'center';
-      zoomInBtn.textContent = '+';
-      document.body.appendChild(zoomInBtn);
-
-const zoomOutBtn = document.createElement('button');
-zoomOutBtn.className = 'btn';
-zoomOutBtn.style.top = '62px';  // Move the button up (adjust as needed)
-zoomOutBtn.style.left = '16px';  // Keep the button on the left
-zoomOutBtn.style.width = '30px';
-zoomOutBtn.style.height = '30px';
-zoomOutBtn.style.borderRadius = '22px';
-zoomOutBtn.style.transform = 'none';
-zoomOutBtn.style.display = 'flex';
-zoomOutBtn.style.justifyContent = 'center';
-zoomOutBtn.style.alignItems = 'center';
-zoomOutBtn.textContent = '-';
-document.body.appendChild(zoomOutBtn);      document.body.appendChild(zoomOutBtn);
-      const moveUpBtn = document.createElement('button');
-      moveUpBtn.className = 'btn';
-      moveUpBtn.style.bottom = '396px';
-      moveUpBtn.textContent = 'Move Up';
-      document.body.appendChild(moveUpBtn);
-      const moveDownBtn = document.createElement('button');
-      moveDownBtn.className = 'btn';
-      moveDownBtn.style.bottom = '444px';
-      moveDownBtn.textContent = 'Move Down';
-      document.body.appendChild(moveDownBtn);
-      const tiltUpBtn = document.createElement('button');
-      tiltUpBtn.className = 'btn';
-      tiltUpBtn.style.bottom = '492px';
-      tiltUpBtn.textContent = 'Tilt Up';
-      document.body.appendChild(tiltUpBtn);
-      const tiltDownBtn = document.createElement('button');
-      tiltDownBtn.className = 'btn';
-      tiltDownBtn.style.bottom = '540px';
-      tiltDownBtn.textContent = 'Tilt Down';
-      document.body.appendChild(tiltDownBtn);
-      function hideLegacyButtons() {
-        try {
-          [load3dBtn, resetBtn, placeBtn, fallbackBtn, startCamBtn, moveUpBtn, moveDownBtn, tiltUpBtn, tiltDownBtn].forEach(b => {
-            if (b) b.style.display = 'none';
-          });
-        } catch (_) {}
-      }
-      hideLegacyButtons();
-      let anchorBase = null;
-      function adjustScale(factor) {
-        const o = activeObject;
-        if (!o) return;
-        const s = Math.max(0.05, Math.min(10, o.scale.x * factor));
-        o.scale.set(s, s, s);
-      }
-      zoomInBtn.addEventListener('click', () => adjustScale(1.1));
-      zoomOutBtn.addEventListener('click', () => adjustScale(0.9));
-      function adjustHeight(delta) { if (!activeObject) return; activeObject.position.y += delta; }
-      function adjustPitch(delta) { if (!activeObject) return; activeObject.rotation.x += delta; }
-      moveUpBtn.addEventListener('click', () => adjustHeight(0.5));
-      moveDownBtn.addEventListener('click', () => adjustHeight(-0.5));
-      tiltUpBtn.addEventListener('click', () => adjustPitch(0.05));
-      tiltDownBtn.addEventListener('click', () => adjustPitch(-0.05));
-      const joy = document.createElement('div');
-      joy.style.position = 'fixed';
-      joy.style.left = '16px';
-      joy.style.bottom = '16px';
-      joy.style.width = '160px';
-      joy.style.height = '160px';
-      joy.style.borderRadius = '80px';
-      joy.style.background = 'rgba(255,255,255,0.08)';
-      joy.style.border = '1px solid rgba(255,255,255,0.25)';
-      joy.style.zIndex = '2000';
-      joy.style.touchAction = 'none';
-      const knob = document.createElement('div');
-      knob.style.position = 'absolute';
-      knob.style.left = '50%';
-      knob.style.top = '50%';
-      knob.style.width = '56px';
-      knob.style.height = '56px';
-      knob.style.marginLeft = '-28px';
-      knob.style.marginTop = '-28px';
-      knob.style.borderRadius = '28px';
-      knob.style.background = 'rgba(255,255,255,0.2)';
-      knob.style.border = '1px solid rgba(255,255,255,0.35)';
-      joy.appendChild(knob);
-      document.body.appendChild(joy);
-      let dragging = false;
-      let center = { x: 80, y: 80 };
-      function applyControl(dx, dy) {
-        if (!activeObject) return;
-        activeObject.rotation.y += dx * 0.004;
-        activeObject.rotation.x += -dy * 0.004;
-      }
-      joy.addEventListener('pointerdown', (e) => { dragging = true; joy.setPointerCapture(e.pointerId); });
-      joy.addEventListener('pointermove', (e) => {
-        if (!dragging) return;
-        const rect = joy.getBoundingClientRect();
-        const x = e.clientX - rect.left;
-        const y = e.clientY - rect.top;
-        const dx = x - center.x;
-        const dy = y - center.y;
-        const mag = Math.hypot(dx, dy);
-        const max = 60;
-        const nx = mag > max ? dx * (max / mag) : dx;
-        const ny = mag > max ? dy * (max / mag) : dy;
-        knob.style.transform = `translate(${nx}px, ${ny}px)`;
-        applyControl(nx, ny);
+      // Color the model
+      model.traverse(o => {
+        if (o.isMesh) {
+          o.castShadow = true; o.receiveShadow = true;
+          o.material = new THREE.MeshPhongMaterial({ color: AIRCRAFT_COLOR, specular: 0xffffff, shininess: 50 });
+        }
       });
-      joy.addEventListener('pointerup', () => { dragging = false; knob.style.transform = 'translate(0,0)'; });
-      const joyR = document.createElement('div');
-      joyR.style.position = 'fixed';
-      joyR.style.right = '80px';
-      joyR.style.bottom = '16px';
-      joyR.style.width = '160px';
-      joyR.style.height = '160px';
-      joyR.style.borderRadius = '80px';
-      joyR.style.background = 'rgba(255,255,255,0.08)';
-      joyR.style.border = '1px solid rgba(255,255,255,0.25)';
-      joyR.style.zIndex = '2000';
-      joyR.style.touchAction = 'none';
-      const knobR = document.createElement('div');
-      knobR.style.position = 'absolute';
-      knobR.style.left = '50%';
-      knobR.style.top = '50%';
-      knobR.style.width = '56px';
-      knobR.style.height = '56px';
-      knobR.style.marginLeft = '-28px';
-      knobR.style.marginTop = '-28px';
-      knobR.style.borderRadius = '28px';
-      knobR.style.background = 'rgba(255,255,255,0.2)';
-      knobR.style.border = '1px solid rgba(255,255,255,0.35)';
-      joyR.appendChild(knobR);
-      document.body.appendChild(joyR);
-      let draggingR = false;
-      const centerR = { x: 80, y: 80 };
-      function applyControlR(dx, dy) {
-        if (!activeObject) return;
-        const px = activeObject.position.x + dx * 0.02;
-        const py = activeObject.position.y + -dy * 0.02;
-        if (!anchorBase) anchorBase = activeObject.position.clone();
-        const limitX = 30, limitY = 30;
-        activeObject.position.x = Math.max(anchorBase.x - limitX, Math.min(anchorBase.x + limitX, px));
-        activeObject.position.y = Math.max(anchorBase.y - limitY, Math.min(anchorBase.y + limitY, py));
-      }
-      joyR.addEventListener('pointerdown', (e) => { draggingR = true; joyR.setPointerCapture(e.pointerId); });
-      joyR.addEventListener('pointermove', (e) => {
-        if (!draggingR) return;
-        const rect = joyR.getBoundingClientRect();
-        const x = e.clientX - rect.left;
-        const y = e.clientY - rect.top;
-        const dx = x - centerR.x;
-        const dy = y - centerR.y;
-        const mag = Math.hypot(dx, dy);
-        const max = 40;
-        const nx = mag > max ? dx * (max / mag) : dx;
-        const ny = mag > max ? dy * (max / mag) : dy;
-        knobR.style.transform = `translate(${nx}px, ${ny}px)`;
-        applyControlR(nx, ny);
+
+      const root = new THREE.Group();
+      // Fix pivot
+      const tmpBox = new THREE.Box3().setFromObject(model);
+      model.position.y += -tmpBox.min.y;
+      root.add(model);
+
+      // Scale to desired length
+      const sizedBox = new THREE.Box3().setFromObject(root);
+      const sizeVec = new THREE.Vector3(); sizedBox.getSize(sizeVec);
+      const currentLength = Math.max(sizeVec.x, sizeVec.y, sizeVec.z);
+      const scaleFactor = DESIRED_LENGTH_M / (currentLength || 1);
+      root.scale.set(scaleFactor, scaleFactor, scaleFactor);
+
+      // Position in front of camera
+      root.position.set(0, 0, -WORLD_SPAWN_DISTANCE);
+      root.rotation.x += SPAWN_ROT_X;
+      root.rotation.y += SPAWN_ROT_Y;
+
+      // Remove previous activeObject
+      if (activeObject) { scene.remove(activeObject); }
+
+      // Add spinning engine fan discs for animation
+      propellers = [];
+      const enginePositions = [];
+      model.traverse(o => {
+        // Detect engine cylinders by their geometry (roughly cylindrical parts at wing level)
+        if (o.isMesh && o.geometry) {
+          const bbox = new THREE.Box3().setFromObject(o);
+          const sz = new THREE.Vector3(); bbox.getSize(sz);
+          // Engines are typically small, round-ish objects below wings
+          if (sz.x > 0 && sz.y > 0 && Math.abs(sz.x - sz.z) < sz.x * 0.5 && sz.y < size.y * 0.3) {
+            const ctr = new THREE.Vector3(); bbox.getCenter(ctr);
+            if (Math.abs(ctr.x) > size.x * 0.1 && ctr.y < center.y) {
+              enginePositions.push(ctr.clone());
+            }
+          }
+        }
       });
-      joyR.addEventListener('pointerup', () => { draggingR = false; knobR.style.transform = 'translate(0,0)'; });
-      joy.style.display = 'none';
-      joyR.style.display = 'none';
-// ================= COMMON FACTORY =================
-function createDpad(positionSide = "right") {
-  const dpad = document.createElement("div");
-  dpad.className = "dpad";
+      // Create fan disc at each engine (max 4)
+      const engPositionsFallback = [
+        new THREE.Vector3(size.x * 0.22, center.y - size.y * 0.22, center.z + size.z * 0.1),
+        new THREE.Vector3(-size.x * 0.22, center.y - size.y * 0.22, center.z + size.z * 0.1),
+      ];
+      const engPos = enginePositions.length >= 2 ? enginePositions.slice(0, 4) : engPositionsFallback;
+      for (const pos of engPos) {
+        const fanGeo = new THREE.CircleGeometry(size.x * 0.025, 8);
+        const fanMat = new THREE.MeshBasicMaterial({ color: 0x88ccff, transparent: true, opacity: 0.4, side: THREE.DoubleSide });
+        const fan = new THREE.Mesh(fanGeo, fanMat);
+        fan.position.copy(pos);
+        fan.rotation.y = Math.PI / 2; // face forward
+        model.add(fan);
+        propellers.push(fan);
+      }
 
-  if (positionSide === "left") {
-    dpad.style.left = "16px";
-    dpad.style.right = "auto";
-  } else {
-    dpad.style.right = "16px";
-    dpad.style.left = "auto";
-  }
+      scene.add(root);
+      activeObject = root;
+      anchorBase = root.position.clone();
 
-  const grid = document.createElement("div");
-  grid.className = "dpad-grid";
-  dpad.appendChild(grid);
-  document.body.appendChild(dpad);
+      // ===== OVERLAYS (control surfaces) =====
+      const box = new THREE.Box3().setFromObject(model);
+      const size = new THREE.Vector3(); box.getSize(size);
+      const center = new THREE.Vector3(); box.getCenter(center);
 
-  const cross = document.createElement("div");
-  cross.className = "dpad-cross";
-  cross.style.gridColumn = "1 / 4";
-  cross.style.gridRow = "1 / 4";
-  grid.appendChild(cross);
-  const centerHub = document.createElement("div");
-  centerHub.className = "dpad-center";
-  centerHub.style.gridColumn = "2"; centerHub.style.gridRow = "2";
-  grid.appendChild(centerHub);
+      const blue = new THREE.MeshBasicMaterial({ color: 0x2ea7ff, transparent: true, opacity: 0.85, depthTest: false, depthWrite: false });
+      const orange = new THREE.MeshBasicMaterial({ color: 0xffa429, transparent: true, opacity: 0.85, depthTest: false, depthWrite: false });
+      function mkOverlay(w, h, d, mat) { const m = new THREE.Mesh(new THREE.BoxGeometry(w, h, d), mat); m.renderOrder = 9998; return m; }
 
-  function makeButton(col, row) {
-    const btn = document.createElement("button");
-    btn.className = "dpad-btn";
-    btn.style.gridColumn = col;
-    btn.style.gridRow = row;
-    grid.appendChild(btn);
-    return btn;
-  }
+      // Slats (right)
+      const slatR = mkOverlay(size.x*0.09, size.y*0.01, size.z*0.03, orange);
+      slatR.position.copy(center.clone().add(new THREE.Vector3(size.x*0.20, size.y*-0.20, size.z*0.07)));
+      slatR.rotation.y += Math.PI / 7;
+      const slatR2 = mkOverlay(size.x*0.09, size.y*0.01, size.z*0.03, orange);
+      slatR2.position.copy(center.clone().add(new THREE.Vector3(size.x*0.32, size.y*-0.20, size.z*0.010)));
+      slatR2.rotation.y += Math.PI / 7;
+      const slatR3 = mkOverlay(size.x*0.09, size.y*0.01, size.z*0.03, orange);
+      slatR3.position.copy(center.clone().add(new THREE.Vector3(size.x*0.43, size.y*-0.20, size.z*-0.04)));
+      slatR3.rotation.y += Math.PI / 7;
 
-  const up = makeButton("2", "1");   up.classList.add("dir-up");
-  const down = makeButton("2", "3"); down.classList.add("dir-down");
-  const left = makeButton("1", "2"); left.classList.add("dir-left");
-  const right = makeButton("3", "2");right.classList.add("dir-right");
-  const center = document.createElement("div");
-  center.className = "dpad-center";
-  center.style.gridColumn = "2";
-  center.style.gridRow = "2";
-  grid.appendChild(center);
-  return { up, down, left, right };
-}
+      // Flaps (right)
+      const flapR = mkOverlay(size.x*0.09, size.y*0.01, size.z*0.02, orange);
+      flapR.position.copy(center.clone().add(new THREE.Vector3(size.x*0.11, size.y*-0.22, size.z*-0.01)));
+      flapR.rotation.y -= Math.PI / 24;
+      const flapR2 = mkOverlay(size.x*0.09, size.y*0.01, size.z*0.02, orange);
+      flapR2.position.copy(center.clone().add(new THREE.Vector3(size.x*0.19, size.y*-0.23, size.z*-0.02)));
+      flapR2.rotation.y += Math.PI / 9;
+      const flapR3 = mkOverlay(size.x*0.14, size.y*0.01, size.z*0.02, orange);
+      flapR3.position.copy(center.clone().add(new THREE.Vector3(size.x*0.3, size.y*-0.22, size.z*-0.06)));
+      flapR3.rotation.y += Math.PI / 9;
 
-// ================= ROTATION CONTROLLER (LEFT) =================
-const rotatePad = createDpad("left");
+      // Spoilers (right)
+      const spoilerR = mkOverlay(size.x*0.09, size.y*0.01, size.z*0.02, blue);
+      spoilerR.position.copy(center.clone().add(new THREE.Vector3(size.x*0.11, size.y*-0.22, size.z*0.0)));
+      spoilerR.rotation.y += Math.PI / 9;
+      const spoilerR2 = mkOverlay(size.x*0.09, size.y*0.01, size.z*0.02, blue);
+      spoilerR2.position.copy(center.clone().add(new THREE.Vector3(size.x*0.20, size.y*-0.20, size.z*-0.01)));
+      spoilerR2.rotation.y += Math.PI / 9;
+      const spoilerR3 = mkOverlay(size.x*0.14, size.y*0.01, size.z*0.02, blue);
+      spoilerR3.position.copy(center.clone().add(new THREE.Vector3(size.x*0.3, size.y*-0.22, size.z*-0.04)));
+      spoilerR3.rotation.y += Math.PI / 9;
 
-function rotateStep(dx, dy) {
-  if (!activeObject) return;
-  const yaw = 0.04;
-  const pitch = 0.04;
-  activeObject.rotation.y += dx * yaw;
-  activeObject.rotation.x += dy * pitch;
-}
+      // Aileron (right)
+      const aileronR = mkOverlay(size.x*0.13, size.y*0.01, size.z*0.02, blue);
+      aileronR.position.copy(center.clone().add(new THREE.Vector3(size.x*0.43, size.y*-0.2, size.z*-0.085)));
+      aileronR.rotation.y += Math.PI / 9;
 
-let holdTimerRotate = null;
+      // Elevators
+      const elevatorL = mkOverlay(size.x*0.14, size.y*0.02, size.z*0.02, blue);
+      elevatorL.position.copy(center.clone().add(new THREE.Vector3(-size.x*0.10, size.y*-0.045, -size.z*0.46)));
+      elevatorL.rotation.y -= Math.PI / 12;
+      const elevatorR = mkOverlay(size.x*0.14, size.y*0.02, size.z*0.02, blue);
+      elevatorR.position.copy(center.clone().add(new THREE.Vector3(size.x*0.10, size.y*-0.045, -size.z*0.46)));
+      elevatorR.rotation.y += Math.PI / 12;
 
-function onHoldRotate(fn) {
-  fn();
-  holdTimerRotate = setInterval(fn, 60);
-}
+      // Rudder
+      const rudder = mkOverlay(size.x*0.005, size.y*0.58, size.z*0.02, blue);
+      rudder.position.copy(center.clone().add(new THREE.Vector3(0, size.y*0.20, -size.z*0.45)));
+      rudder.rotation.x -= Math.PI / 12;
 
-function endHoldRotate() {
-  if (holdTimerRotate) {
-    clearInterval(holdTimerRotate);
-    holdTimerRotate = null;
-  }
-}
+      [slatR, slatR2, slatR3, flapR, flapR2, flapR3, spoilerR, spoilerR2, spoilerR3, aileronR, elevatorL, elevatorR, rudder].forEach(o => { model.add(o); overlayMeshes.push(o); });
 
-rotatePad.up.addEventListener("pointerdown", () =>
-  onHoldRotate(() => rotateStep(0, 1))
-);
-rotatePad.down.addEventListener("pointerdown", () =>
-  onHoldRotate(() => rotateStep(0, -1))
-);
-rotatePad.left.addEventListener("pointerdown", () =>
-  onHoldRotate(() => rotateStep(-1, 0))
-);
-rotatePad.right.addEventListener("pointerdown", () =>
-  onHoldRotate(() => rotateStep(1, 0))
-);
+      // Left wing (mirrored)
+      const slatL = mkOverlay(size.x*0.09, size.y*0.01, size.z*0.03, orange);
+      slatL.position.copy(center.clone().add(new THREE.Vector3(-size.x*0.20, size.y*-0.20, size.z*0.07)));
+      slatL.rotation.y -= Math.PI / 7;
+      const slatL2 = mkOverlay(size.x*0.09, size.y*0.01, size.z*0.03, orange);
+      slatL2.position.copy(center.clone().add(new THREE.Vector3(-size.x*0.32, size.y*-0.20, size.z*0.010)));
+      slatL2.rotation.y -= Math.PI / 7;
+      const slatL3 = mkOverlay(size.x*0.09, size.y*0.01, size.z*0.03, orange);
+      slatL3.position.copy(center.clone().add(new THREE.Vector3(-size.x*0.43, size.y*-0.20, size.z*-0.04)));
+      slatL3.rotation.y -= Math.PI / 7;
+      const flapL = mkOverlay(size.x*0.09, size.y*0.01, size.z*0.02, orange);
+      flapL.position.copy(center.clone().add(new THREE.Vector3(-size.x*0.11, size.y*-0.22, size.z*-0.01)));
+      flapL.rotation.y += Math.PI / 24;
+      const flapL2 = mkOverlay(size.x*0.09, size.y*0.01, size.z*0.02, orange);
+      flapL2.position.copy(center.clone().add(new THREE.Vector3(-size.x*0.19, size.y*-0.23, size.z*-0.02)));
+      flapL2.rotation.y -= Math.PI / 9;
+      const flapL3 = mkOverlay(size.x*0.14, size.y*0.01, size.z*0.02, orange);
+      flapL3.position.copy(center.clone().add(new THREE.Vector3(-size.x*0.30, size.y*-0.22, size.z*-0.06)));
+      flapL3.rotation.y -= Math.PI / 9;
+      const spoilerL = mkOverlay(size.x*0.09, size.y*0.01, size.z*0.02, blue);
+      spoilerL.position.copy(center.clone().add(new THREE.Vector3(-size.x*0.11, size.y*-0.22, size.z*0.0)));
+      spoilerL.rotation.y += Math.PI / 11;
+      const spoilerL2 = mkOverlay(size.x*0.09, size.y*0.01, size.z*0.02, blue);
+      spoilerL2.position.copy(center.clone().add(new THREE.Vector3(-size.x*0.20, size.y*-0.20, size.z*-0.01)));
+      spoilerL2.rotation.y -= Math.PI / 9;
+      const spoilerL3 = mkOverlay(size.x*0.14, size.y*0.01, size.z*0.02, blue);
+      spoilerL3.position.copy(center.clone().add(new THREE.Vector3(-size.x*0.30, size.y*-0.22, size.z*-0.04)));
+      spoilerL3.rotation.y -= Math.PI / 9;
+      const aileronL = mkOverlay(size.x*0.13, size.y*0.01, size.z*0.02, blue);
+      aileronL.position.copy(center.clone().add(new THREE.Vector3(-size.x*0.43, size.y*-0.2, size.z*-0.085)));
+      aileronL.rotation.y -= Math.PI / 9;
+      [slatL, slatL2, slatL3, flapL, flapL2, flapL3, spoilerL, spoilerL2, spoilerL3, aileronL].forEach(o => { model.add(o); overlayMeshes.push(o); });
 
-Object.values(rotatePad).forEach((btn) => {
-  btn.addEventListener("pointerup", endHoldRotate);
-  btn.addEventListener("pointerleave", endHoldRotate);
-  btn.addEventListener("pointercancel", endHoldRotate);
-});
+      // Callout labels
+      addCallout(model, slatR, 'SLATS', new THREE.Vector3(-size.x*0.0, size.y*0.18, size.z*0.10));
+      addCallout(model, spoilerR, 'SPOILERS', new THREE.Vector3(-size.x*0.0, size.y*0.28, size.z*0.02));
+      addCallout(model, flapR, 'FLAPS', new THREE.Vector3(size.x*0.0, size.y*0.16, -size.z*0.08));
+      addCallout(model, aileronR, 'AILERONS', new THREE.Vector3(size.x*0.0, size.y*0.22, -size.z*0.02));
+      addCallout(model, elevatorR, 'ELEVATORS', new THREE.Vector3(-size.x*0.0, size.y*0.2, -size.z*0));
+      addCallout(model, rudder, 'RUDDER', new THREE.Vector3(-size.x*0.0, size.y*0.50, -size.z*0));
+      addCallout(model, slatL, 'SLATS', new THREE.Vector3(size.x*0.0, size.y*0.18, size.z*0.10));
+      addCallout(model, spoilerL, 'SPOILERS', new THREE.Vector3(size.x*0.0, size.y*0.28, size.z*0.02));
+      addCallout(model, flapL, 'FLAPS', new THREE.Vector3(-size.x*0.0, size.y*0.16, -size.z*0.08));
+      addCallout(model, aileronL, 'AILERONS', new THREE.Vector3(-size.x*0.0, size.y*0.22, -size.z*0.02));
 
-// ================= MOVEMENT CONTROLLER (RIGHT) =================
-const movePad = createDpad("right");
+      setLabelsVisible(true);
+      setupLabelClick();
+    }
+    // end load3dAircraft
 
-let holdTimerMove = null;
+    // ===== POPUP RAYCASTER =====
+    function setupLabelClick() {
+      const popup = document.getElementById('partPopup');
+      const popupOverlay = document.getElementById('partPopupOverlay');
+      const popupTitle = document.getElementById('popupTitle');
+      const popupBody = document.getElementById('popupBody');
+      const popupClose = document.getElementById('popupClose');
 
-function moveActive(dx, dy) {
-  if (!activeObject) return;
+      function showPopup(key) {
+        const desc = PART_DESCRIPTIONS[key];
+        if (!desc) return;
+        popupTitle.textContent = key;
+        popupBody.textContent = desc;
+        popup.style.display = 'block';
+        popupOverlay.style.display = 'block';
+      }
+      function hidePopup() {
+        popup.style.display = 'none';
+        popupOverlay.style.display = 'none';
+      }
+      popupClose.addEventListener('click', hidePopup);
+      popupOverlay.addEventListener('click', hidePopup);
 
-  const step = 0.15;
+      if (window.__labelClickHandler) {
+        renderer.domElement.removeEventListener('pointerdown', window.__labelTapStart);
+        renderer.domElement.removeEventListener('pointerup', window.__labelClickHandler);
+      }
 
-  if (!anchorBase) {
-    anchorBase = activeObject.position.clone();
-  }
+      const raycaster = new THREE.Raycaster();
+      const mouse = new THREE.Vector2();
+      let tapStart = null;
 
-  const px = activeObject.position.x + dx * step;
-  const py = activeObject.position.y + dy * step;
+      window.__labelTapStart = function(e) {
+        tapStart = { x: e.clientX, y: e.clientY, time: Date.now() };
+      };
 
-  const limitX = 30;
-  const limitY = 30;
+      window.__labelClickHandler = function(e) {
+        if (popup.style.display === 'block') return;
+        if (!tapStart) return;
+        // Only count as tap if finger didn't move much and was short
+        const dx = e.clientX - tapStart.x;
+        const dy = e.clientY - tapStart.y;
+        const dt = Date.now() - tapStart.time;
+        if (Math.abs(dx) > 15 || Math.abs(dy) > 15 || dt > 400) { tapStart = null; return; }
+        tapStart = null;
 
-  activeObject.position.x = Math.max(
-    anchorBase.x - limitX,
-    Math.min(anchorBase.x + limitX, px)
-  );
+        const rect = renderer.domElement.getBoundingClientRect();
+        mouse.x = ((e.clientX - rect.left) / rect.width) * 2 - 1;
+        mouse.y = -((e.clientY - rect.top) / rect.height) * 2 + 1;
+        raycaster.setFromCamera(mouse, camera);
 
-  activeObject.position.y = Math.max(
-    anchorBase.y - limitY,
-    Math.min(anchorBase.y + limitY, py)
-  );
-}
+        // Raycast against label sprites
+        const hits = raycaster.intersectObjects(labelSprites, false);
+        for (const hit of hits) {
+          if (hit.object.userData && hit.object.userData.isPartLabel) {
+            showPopup(hit.object.userData.partKey);
+            return;
+          }
+        }
 
-function onHoldMove(fn) {
-  fn();
-  holdTimerMove = setInterval(fn, 60);
-}
+        // Fallback: find nearest label by screen distance (for sizeAttenuation:false sprites)
+        let closest = null;
+        let closestDist = 60; // max pixel distance threshold
+        for (const spr of labelSprites) {
+          if (!spr.visible || !spr.userData.isPartLabel) continue;
+          const pos = new THREE.Vector3();
+          spr.getWorldPosition(pos);
+          pos.project(camera);
+          const sx = (pos.x * 0.5 + 0.5) * rect.width;
+          const sy = (-pos.y * 0.5 + 0.5) * rect.height;
+          const dist = Math.hypot(e.clientX - rect.left - sx, e.clientY - rect.top - sy);
+          if (dist < closestDist) {
+            closestDist = dist;
+            closest = spr;
+          }
+        }
+        if (closest) {
+          showPopup(closest.userData.partKey);
+        }
+      };
 
-function endHoldMove() {
-  if (holdTimerMove) {
-    clearInterval(holdTimerMove);
-    holdTimerMove = null;
-  }
-}
+      renderer.domElement.addEventListener('pointerdown', window.__labelTapStart);
+      renderer.domElement.addEventListener('pointerup', window.__labelClickHandler);
+    }
 
-movePad.up.addEventListener("pointerdown", () =>
-  onHoldMove(() => moveActive(0, 1))
-);
-movePad.down.addEventListener("pointerdown", () =>
-  onHoldMove(() => moveActive(0, -1))
-);
-movePad.left.addEventListener("pointerdown", () =>
-  onHoldMove(() => moveActive(-1, 0))
-);
-movePad.right.addEventListener("pointerdown", () =>
-  onHoldMove(() => moveActive(1, 0))
-);
+    // ===== CAMERA START =====
+    async function startCamera() {
+      try {
+        const stream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: 'environment' }, audio: false });
+        let vid = document.getElementById('previewVideo');
+        if (!vid) {
+          vid = document.createElement('video');
+          vid.id = 'previewVideo';
+          vid.style.cssText = 'position:fixed;inset:0;width:100vw;height:100vh;object-fit:cover;z-index:1;pointer-events:none';
+          vid.muted = true; vid.autoplay = true; vid.playsInline = true;
+          document.body.appendChild(vid);
+        }
+        vid.srcObject = stream;
+        await vid.play();
+        window._previewStream = stream;
+      } catch (e) {
+        console.warn('Camera error:', e);
+        const unsupported = document.getElementById('unsupported');
+        unsupported.classList.add('active');
+      }
+    }
+    window.__startCam = startCamera;
 
-Object.values(movePad).forEach((btn) => {
-  btn.addEventListener("pointerup", endHoldMove);
-  btn.addEventListener("pointerleave", endHoldMove);
-  btn.addEventListener("pointercancel", endHoldMove);
-});
+    // ===== D-PAD FACTORY =====
+    function createDpad(side) {
+      const dpad = document.createElement('div');
+      dpad.className = 'dpad';
+      dpad.style[side] = '16px';
+      dpad.style[side === 'left' ? 'right' : 'left'] = 'auto';
+      dpad.style.bottom = '16px';
+      const grid = document.createElement('div');
+      grid.className = 'dpad-grid';
+      dpad.appendChild(grid);
+      document.body.appendChild(dpad);
+      const cross = document.createElement('div');
+      cross.className = 'dpad-cross';
+      grid.appendChild(cross);
+      function makeBtn(col, row) {
+        const btn = document.createElement('button');
+        btn.className = 'dpad-btn';
+        btn.style.gridColumn = col; btn.style.gridRow = row;
+        grid.appendChild(btn);
+        return btn;
+      }
+      const up = makeBtn('2','1'), down = makeBtn('2','3'), left = makeBtn('1','2'), right = makeBtn('3','2');
+      const hub = document.createElement('div');
+      hub.className = 'dpad-center';
+      grid.appendChild(hub);
+      return { up, down, left, right };
+    }
 
-// ================= MENU BUTTON =================
-  const menuBtn = document.createElement("button");
-  menuBtn.className = "menu-btn";
-
-  const bars = document.createElement("div");
-  bars.className = "menu-bars";
-
-  function makeBar() {
-    const bar = document.createElement("div");
-    bar.className = "menu-bar";
-    return bar;
-  }
-
-  bars.append(makeBar(), makeBar(), makeBar());
-  menuBtn.appendChild(bars);
-  document.body.appendChild(menuBtn);
-
-  // ================= DROPDOWN =================
-  const menu = document.createElement("div");
-  menu.className = "menu-dropdown";
-  document.body.appendChild(menu);
-
-  // ================= MENU ITEMS =================
-  function addMenuItem(title, handler) {
-    const item = document.createElement("div");
-    item.className = "menu-item";
-    item.textContent = title;
-
-    item.addEventListener("click", (e) => {
-      e.stopPropagation();
-      handler();
-      closeMenu();
+    // ===== ROTATION D-PAD (LEFT) =====
+    const rotatePad = createDpad('left');
+    let holdTimerRotate = null;
+    function rotateStep(dx, dy) {
+      if (!activeObject) return;
+      activeObject.rotation.y += dx * 0.04;
+      activeObject.rotation.x += dy * 0.04;
+    }
+    function onHoldRotate(fn) { fn(); holdTimerRotate = setInterval(fn, 60); }
+    function endHoldRotate() { if (holdTimerRotate) { clearInterval(holdTimerRotate); holdTimerRotate = null; } }
+    rotatePad.up.addEventListener('pointerdown', () => onHoldRotate(() => rotateStep(0, 1)));
+    rotatePad.down.addEventListener('pointerdown', () => onHoldRotate(() => rotateStep(0, -1)));
+    rotatePad.left.addEventListener('pointerdown', () => onHoldRotate(() => rotateStep(-1, 0)));
+    rotatePad.right.addEventListener('pointerdown', () => onHoldRotate(() => rotateStep(1, 0)));
+    Object.values(rotatePad).forEach(btn => {
+      btn.addEventListener('pointerup', endHoldRotate);
+      btn.addEventListener('pointerleave', endHoldRotate);
+      btn.addEventListener('pointercancel', endHoldRotate);
     });
 
-    menu.appendChild(item);
-  }
+    // ===== MOVEMENT D-PAD (RIGHT) =====
+    const movePad = createDpad('right');
+    let holdTimerMove = null;
+    function moveActive(dx, dy) {
+      if (!activeObject) return;
+      const step = 0.15;
+      if (!anchorBase) anchorBase = activeObject.position.clone();
+      const px = activeObject.position.x + dx * step;
+      const py = activeObject.position.y + dy * step;
+      const limit = 30;
+      activeObject.position.x = Math.max(anchorBase.x - limit, Math.min(anchorBase.x + limit, px));
+      activeObject.position.y = Math.max(anchorBase.y - limit, Math.min(anchorBase.y + limit, py));
+    }
+    function onHoldMove(fn) { fn(); holdTimerMove = setInterval(fn, 60); }
+    function endHoldMove() { if (holdTimerMove) { clearInterval(holdTimerMove); holdTimerMove = null; } }
+    movePad.up.addEventListener('pointerdown', () => onHoldMove(() => moveActive(0, 1)));
+    movePad.down.addEventListener('pointerdown', () => onHoldMove(() => moveActive(0, -1)));
+    movePad.left.addEventListener('pointerdown', () => onHoldMove(() => moveActive(-1, 0)));
+    movePad.right.addEventListener('pointerdown', () => onHoldMove(() => moveActive(1, 0)));
+    Object.values(movePad).forEach(btn => {
+      btn.addEventListener('pointerup', endHoldMove);
+      btn.addEventListener('pointerleave', endHoldMove);
+      btn.addEventListener('pointercancel', endHoldMove);
+    });
 
-  addMenuItem("Load 3D Aircraft", async () => { try { if (!window._previewStream) await window.__startCam(); load3dAircraft(); } catch(_){} });
-  addMenuItem("Reset", () => resetBtn.click());
-  addMenuItem("Start Camera", () => __startHandler && __startHandler());
-  addMenuItem("Unshow Labels", () => setLabelsVisible(false));
-  addMenuItem("Show Labels", () => setLabelsVisible(true));
-
-  // ================= STATE =================
-  let isOpen = false;
-
-  function openMenu() {
-    isOpen = true;
-    menu.classList.add("show");
-    menuBtn.classList.add("active");
-  }
-
-  function closeMenu() {
-    isOpen = false;
-    menu.classList.remove("show");
-    menuBtn.classList.remove("active");
-  }
-
-  function toggleMenu(e) {
-    e.stopPropagation();
-    isOpen ? closeMenu() : openMenu();
-  }
-
-  menuBtn.addEventListener("click", toggleMenu);
-
-  // Prevent closing when clicking inside menu
-  menu.addEventListener("click", (e) => {
-    e.stopPropagation();
-  });
-
-  // Close when clicking outside
-  document.addEventListener("click", () => {
-    if (isOpen) closeMenu();
-  });
-
-// ================= AR / THREE FIX =================
-// pointer-events must remain "auto" on the canvas so raycaster click handlers fire
-
-menu.style.pointerEvents = "auto";
-menuBtn.style.pointerEvents = "auto";
-
-      // =========== ZOOM IN/OUT BUTTONS ===========/
-function layoutControls() {
-  // ===== JOYSTICK CLASSES =====
-  joy.classList.add("joystick", "joy-left");
-  knob.classList.add("joystick-knob");
-
-  joyR.classList.add("joystick", "joy-right");
-  knobR.classList.add("joystick-knob");
-
-  // ===== CREATE TOP CONTROL WRAPPER (if not existing) =====
-  let topControls = document.querySelector(".top-controls");
-  if (!topControls) {
-    topControls = document.createElement("div");
-    topControls.className = "top-controls";
+    // ===== ZOOM BUTTONS =====
+    const topControls = document.createElement('div');
+    topControls.className = 'top-controls';
     document.body.appendChild(topControls);
-  }
 
-  // ===== APPLY BUTTON STYLE =====
-  zoomInBtn.classList.add("control-btn");
-  zoomOutBtn.classList.add("control-btn");
-
-  // ===== MOVE ZOOM BUTTONS INTO TOP CONTROLS =====
-  if (!topControls.contains(zoomInBtn)) {
+    const zoomInBtn = document.createElement('button');
+    zoomInBtn.className = 'control-btn';
+    zoomInBtn.textContent = '+';
     topControls.appendChild(zoomInBtn);
-  }
 
-  if (!topControls.contains(zoomOutBtn)) {
+    const zoomOutBtn = document.createElement('button');
+    zoomOutBtn.className = 'control-btn';
+    zoomOutBtn.textContent = '-';
     topControls.appendChild(zoomOutBtn);
-  }
 
-  zoomInBtn.style.bottom = "";
-  zoomOutBtn.style.bottom = "";
-  zoomInBtn.style.top = "";
-  zoomOutBtn.style.top = "";
-  zoomInBtn.style.left = "";
-  zoomOutBtn.style.left = "";
-  zoomInBtn.style.right = "";
-  zoomOutBtn.style.right = "";
-  zoomInBtn.style.transform = "none";
-  zoomOutBtn.style.transform = "none";
-  zoomInBtn.style.position = "relative";
-  zoomOutBtn.style.position = "relative";
-}
+    function adjustScale(factor) {
+      if (!activeObject) return;
+      const s = Math.max(0.05, Math.min(10, activeObject.scale.x * factor));
+      activeObject.scale.set(s, s, s);
+    }
+    zoomInBtn.addEventListener('click', () => adjustScale(1.1));
+    zoomOutBtn.addEventListener('click', () => adjustScale(0.9));
 
-      layoutControls();
-      window.addEventListener('resize', layoutControls);
-      window.addEventListener('orientationchange', layoutControls);
+    // ===== MENU =====
+    const menuBtn = document.createElement('button');
+    menuBtn.className = 'menu-btn';
+    const bars = document.createElement('div');
+    bars.className = 'menu-bars';
+    for (let i = 0; i < 3; i++) { const b = document.createElement('div'); b.className = 'menu-bar'; bars.appendChild(b); }
+    menuBtn.appendChild(bars);
+    document.body.appendChild(menuBtn);
+
+    const menuDropdown = document.createElement('div');
+    menuDropdown.className = 'menu-dropdown';
+    document.body.appendChild(menuDropdown);
+
+    let menuOpen = false;
+    function toggleMenu(e) {
+      e.stopPropagation();
+      menuOpen = !menuOpen;
+      menuDropdown.classList.toggle('show', menuOpen);
+      menuBtn.classList.toggle('active', menuOpen);
+    }
+    function closeMenu() { menuOpen = false; menuDropdown.classList.remove('show'); menuBtn.classList.remove('active'); }
+    menuBtn.addEventListener('click', toggleMenu);
+    document.addEventListener('click', closeMenu);
+
+    function addMenuItem(title, handler) {
+      const item = document.createElement('div');
+      item.className = 'menu-item';
+      item.textContent = title;
+      item.addEventListener('click', (e) => { e.stopPropagation(); handler(); closeMenu(); });
+      menuDropdown.appendChild(item);
+    }
+    addMenuItem('Load 3D Aircraft', async () => { await startCamera(); await load3dAircraft(); });
+    addMenuItem('Reset', () => { if (activeObject) { scene.remove(activeObject); activeObject = null; } });
+    addMenuItem('Hide Labels', () => setLabelsVisible(false));
+    addMenuItem('Show Labels', () => setLabelsVisible(true));
+
+    // ===== ANIMATION LOOP =====
+    let bouncePrev = 0;
+    const bounceSpeed = 2.2;
+    const bounceAmp = 0.12;
+    let propellers = []; // will hold propeller meshes
+    let autoRotate = true; // slow idle spin
+
+    function animate() {
+      requestAnimationFrame(animate);
+      if (nonXrControls) nonXrControls.update();
+
+      if (activeObject) {
+        const time = performance.now() * 0.001;
+
+        // Floating up/down (like hovering in air)
+        const bo = Math.sin(time * bounceSpeed) * bounceAmp;
+        activeObject.position.y += (bo - bouncePrev);
+        bouncePrev = bo;
+
+        // Gentle banking/rocking (roll oscillation)
+        activeObject.rotation.z = Math.sin(time * 0.8) * 0.015;
+
+        // Slow auto-rotate (idle turntable) when not being dragged
+        if (autoRotate) {
+          activeObject.rotation.y += 0.002;
+        }
+
+        // Spin propellers/engine fans if present
+        for (const prop of propellers) {
+          prop.rotation.z += 0.4;
+        }
+      }
+
+      renderer.render(scene, camera);
+    }
+    animate();
+
+    // ===== RESIZE =====
+    window.addEventListener('resize', () => {
+      renderer.setSize(window.innerWidth, window.innerHeight);
+      camera.aspect = window.innerWidth / window.innerHeight;
+      camera.updateProjectionMatrix();
+    });
+
+    // ===== DRAG TO ROTATE + PINCH TO ZOOM =====
+    (function addGestures() {
+      const pointers = new Map();
+      let lastPinch = 0;
+
+      renderer.domElement.addEventListener('pointerdown', e => {
+        pointers.set(e.pointerId, { x: e.clientX, y: e.clientY });
+        renderer.domElement.setPointerCapture(e.pointerId);
+        autoRotate = false; // pause idle spin while dragging
+      });
+
+      renderer.domElement.addEventListener('pointermove', e => {
+        if (!activeObject) return;
+        const p = pointers.get(e.pointerId);
+        if (!p) return;
+        const dx = e.clientX - p.x;
+        const dy = e.clientY - p.y;
+        pointers.set(e.pointerId, { x: e.clientX, y: e.clientY });
+
+        if (pointers.size === 1) {
+          // Single finger/mouse drag = rotate
+          activeObject.rotation.y += dx * 0.005;
+          activeObject.rotation.x += dy * 0.005;
+        } else if (pointers.size === 2) {
+          // Pinch = zoom
+          const arr = Array.from(pointers.values());
+          const d = Math.hypot(arr[0].x - arr[1].x, arr[0].y - arr[1].y);
+          if (lastPinch) {
+            const delta = d - lastPinch;
+            const s = Math.max(0.05, Math.min(10, activeObject.scale.x + delta * 0.002));
+            activeObject.scale.set(s, s, s);
+          }
+          lastPinch = d;
+        }
+      });
+
+      renderer.domElement.addEventListener('pointerup', e => {
+        pointers.delete(e.pointerId);
+        if (pointers.size < 2) lastPinch = 0;
+        if (pointers.size === 0) setTimeout(() => { autoRotate = true; }, 2000); // resume idle spin after 2s
+      });
+      renderer.domElement.addEventListener('pointercancel', e => {
+        pointers.delete(e.pointerId);
+        if (pointers.size < 2) lastPinch = 0;
+        if (pointers.size === 0) setTimeout(() => { autoRotate = true; }, 2000);
+      });
+    })();
+
+    // ===== START OVERLAY HANDLER =====
+    const startOverlay = document.getElementById('startOverlay');
+    const startArBtn = document.getElementById('startArBtn');
+
+    startArBtn.addEventListener('click', async () => {
+      startOverlay.style.display = 'none';
+      await startCamera();
+      // Request device orientation permission (iOS)
       try {
-        window.addEventListener('devicemotion', (e) => {
-          if (!followDevice) return;
-          // Rotate-only behavior: position stays fixed; visual analog feedback happens in render loop
-        }, { passive: true });
-      } catch (_) {}
-
-      window.addEventListener('resize', () => {
-        renderer.setSize(window.innerWidth, window.innerHeight);
-        camera.aspect = window.innerWidth / window.innerHeight;
-        camera.updateProjectionMatrix();
-      });
-
-      const controller = renderer.xr.getController(0);
-      controller.addEventListener('select', async () => {
-        try {
-          const xrCam = renderer.xr.getCamera();
-          const dir = new THREE.Vector3(); xrCam.getWorldDirection(dir);
-          const pos = new THREE.Vector3(); xrCam.getWorldPosition(pos);
-          window.__pendingSpawnPosition = pos.add(dir.multiplyScalar(WORLD_SPAWN_DISTANCE));
-          await load3dAircraft();
-          window.__pendingSpawnPosition = null;
-        } catch (_) {}
-      });
-      scene.add(controller);
-
-      let __bouncePrev = 0;
-      const __bounceSpeed = 2.2;
-      const __bounceAmp = 0.06;
-      let __prevYaw = 0, __prevPitch = 0;
-      renderer.setAnimationLoop((t, frame) => {
-        const cam = renderer.xr.isPresenting ? renderer.xr.getCamera() : camera;
-        const eul = new THREE.Euler().setFromQuaternion(cam.quaternion, 'YXZ');
-        // keep arrows on left; do not auto-switch to analog
-        __prevYaw = eul.y; __prevPitch = eul.x;
-        if (renderer.xr.isPresenting) {
-          if (leftAnalogMode && knob) {
-            const kMax = 60;
-            const dx = THREE.MathUtils.clamp(-eul.y * 120, -kMax, kMax);
-            const dy = THREE.MathUtils.clamp(eul.x * 120, -kMax, kMax);
-            knob.style.transform = `translate(${dx}px, ${dy}px)`;
-          }
-          if (activeObject) {
-            const gainYaw = 0.35, gainPitch = 0.35;
-            const dyaw = eul.y - __prevYaw;
-            const dpitch = eul.x - __prevPitch;
-            activeObject.rotation.y += -dyaw * gainYaw;
-            activeObject.rotation.x += -dpitch * gainPitch;
-          }
-          // keep label size readable regardless of angle/distance
-          try {
-            const camPos = new THREE.Vector3(); cam.getWorldPosition(camPos);
-            const fov = (cam.isPerspectiveCamera ? cam.fov : 70);
-            for (const spr of labelSprites) {
-              if (!spr || !spr.userData || !spr.userData.texSize) continue;
-              const sp = new THREE.Vector3(); spr.getWorldPosition(sp);
-              const dist = camPos.distanceTo(sp);
-              const worldHeight = 2 * Math.tan(THREE.MathUtils.degToRad(fov * 0.5)) * dist;
-              const unitsPerPixel = worldHeight / window.innerHeight;
-              const desiredPx = 80;
-              const hWorld = Math.max(0.2, desiredPx * unitsPerPixel);
-              const aspect = spr.userData.texSize.w / spr.userData.texSize.h;
-              spr.scale.set(hWorld * aspect, hWorld, 1);
-              spr.material.rotation = 0;
-            }
-          } catch(_) {}
-          if (activeObject) {
-            const time = performance.now() * 0.001;
-            const bo = Math.sin(time * __bounceSpeed) * __bounceAmp;
-            activeObject.position.y += (bo - __bouncePrev);
-            __bouncePrev = bo;
-          }
-          renderer.render(scene, camera);
-        } else {
-          if (nonXrControls) nonXrControls.update();
-          if (followDevice) {
-            camera.quaternion.slerp(virtualCam.quaternion, 0.15);
-          }
-          if (leftAnalogMode && knob) {
-            const kMax = 60;
-            const dx = THREE.MathUtils.clamp(-eul.y * 120, -kMax, kMax);
-            const dy = THREE.MathUtils.clamp(eul.x * 120, -kMax, kMax);
-            knob.style.transform = `translate(${dx}px, ${dy}px)`;
-          }
-          if (activeObject) {
-            const gainYaw = 0.35, gainPitch = 0.35;
-            const dyaw = eul.y - __prevYaw;
-            const dpitch = eul.x - __prevPitch;
-            activeObject.rotation.y += -dyaw * gainYaw;
-            activeObject.rotation.x += -dpitch * gainPitch;
-          }
-          if (activeObject) {
-            const time = performance.now() * 0.001;
-            const bo = Math.sin(time * __bounceSpeed) * __bounceAmp;
-            activeObject.position.y += (bo - __bouncePrev);
-            __bouncePrev = bo;
-          }
-          renderer.render(scene, camera);
+        if (typeof DeviceOrientationEvent !== 'undefined' && typeof DeviceOrientationEvent.requestPermission === 'function') {
+          await DeviceOrientationEvent.requestPermission();
         }
-      });
-
-      const hasXR = 'xr' in navigator;
-      let supported = false;
-      try { supported = hasXR && await navigator.xr.isSessionSupported('immersive-ar'); } catch (_) { supported = false; }
-      const secure = location.protocol === 'https:' || location.hostname === 'localhost';
-      if (!secure) {
-        unsupported.classList.add('active');
-        unsupportedMsg.innerHTML = '<h2>Secure context required</h2><p>Open this page over HTTPS or localhost, then press Start AR.</p>';
-      } else if (!supported) {
-        unsupported.classList.add('active');
-        const isAndroid = /Android/i.test(navigator.userAgent);
-        if (isAndroid) {
-          unsupportedMsg.innerHTML = '<h2>AR not supported</h2><p>Install or update Google Play Services for AR (ARCore), then try again.</p><p><a style=\"color:#7ec8ff\" href=\"https://play.google.com/store/apps/details?id=com.google.ar.core\" target=\"_blank\" rel=\"noopener\">Open Play Store</a></p>';
-        } else {
-          unsupportedMsg.innerHTML = '<h2>AR not supported</h2><p>Your browser/device does not support WebXR AR. Use Chrome on Android.</p>';
-        }
-        // Fallback: enable floating AR placement without hit-test
-        button.textContent = 'Start Floating AR';
-        button.addEventListener('click', async () => {
-          // Ensure camera preview
-          try {
-            if (!window._previewStream) {
-              const stream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: 'environment' }, audio: false });
-              let vid = document.getElementById('previewVideo');
-              if (!vid) {
-                vid = document.createElement('video');
-                vid.id = 'previewVideo';
-                vid.style.position = 'fixed';
-                vid.style.inset = '0';
-                vid.style.width = '100vw';
-                vid.style.height = '100vh';
-                vid.style.objectFit = 'cover';
-                vid.style.zIndex = '1';
-                vid.style.pointerEvents = 'none';
-                vid.muted = true;
-                vid.autoplay = true;
-                vid.playsInline = true;
-                document.body.appendChild(vid);
-              }
-              vid.srcObject = stream;
-              await vid.play();
-              window._previewStream = stream;
-            }
-          } catch (e) {}
-          // Setup device orientation controls (smoothed via virtualCam)
-          async function requestSensorPermission() {
-            try {
-              if (typeof DeviceOrientationEvent !== 'undefined' && typeof DeviceOrientationEvent.requestPermission === 'function') {
-                await DeviceOrientationEvent.requestPermission();
-              }
-            } catch (_) {}
-            try {
-              if (typeof DeviceMotionEvent !== 'undefined' && typeof DeviceMotionEvent.requestPermission === 'function') {
-                await DeviceMotionEvent.requestPermission();
-              }
-            } catch (_) {}
-          }
-          await requestSensorPermission();
-          if (DeviceOrientationControls) {
-            nonXrControls = new DeviceOrientationControls(virtualCam);
-            nonXrControls.connect();
-          }
-          if (!orbitControls && OrbitControls) {
-            orbitControls = new OrbitControls(camera, renderer.domElement);
-            orbitControls.enableDamping = true;
-            orbitControls.dampingFactor = 0.1;
-            orbitControls.enablePan = true;
-            orbitControls.enableZoom = true;
-          }
-          // Spawn airplane in front of camera
-          const obj = makeAirplane();
-          obj.position.set(0, 0, -WORLD_SPAWN_DISTANCE);
-          scene.add(obj);
-          // Bring canvas above video
-          renderer.domElement.style.position = 'fixed';
-          renderer.domElement.style.inset = '0';
-          renderer.domElement.style.zIndex = '2';
-        }, { once: true });
+      } catch(_) {}
+      if (DeviceOrientationControls) {
+        nonXrControls = new DeviceOrientationControls(virtualCam);
+        nonXrControls.connect();
       }
-      fallbackBtn.addEventListener('click', () => {
-        const glb = encodeURIComponent('https://raw.githubusercontent.com/KhronosGroup/glTF-Sample-Models/master/2.0/CesiumAir/glTF-Binary/CesiumAir.glb');
-        const url = `https://arvr.google.com/scene-viewer/1.0?file=${glb}&mode=ar_preferred&title=Aircraft`;
-        window.location.href = url;
-      });
-      const placed = [];
-      let placeCount = 0;
-      let lastPlacedSimple = null;
-      function placeAircraft() {
-        const obj = makeAirplane();
-        if (renderer.xr.isPresenting) {
-          const xrCam = renderer.xr.getCamera();
-          const dir = new THREE.Vector3(); xrCam.getWorldDirection(dir);
-          const pos = new THREE.Vector3(); xrCam.getWorldPosition(pos);
-          const dist = WORLD_SPAWN_DISTANCE;
-          obj.position.copy(pos.add(dir.multiplyScalar(dist)));
-          //=========== DEFAULT ROTATION (XR immediate spawn) — adjust here =======//
-          // yaw (Y) = left/right, pitch (X) = up/down, roll (Z) = tilt
-          obj.rotation.x += SPAWN_ROT_UPDOWN_X;
-          obj.rotation.y += SPAWN_ROT_UPDOWN_Y;
-          obj.rotation.x += SPAWN_ROT_LEFTRIGHT_X;
-          obj.rotation.y += SPAWN_ROT_LEFTRIGHT_Y;
-        } else {
-          if (!window._previewStream) {
-            // if preview is not running, try to start it quietly
-            navigator.mediaDevices.getUserMedia({ video: { facingMode: 'environment' }, audio: false })
-              .then(stream => {
-                window._previewStream = stream;
-                let vid = document.getElementById('previewVideo');
-                if (!vid) {
-                  vid = document.createElement('video');
-                  vid.id = 'previewVideo';
-                  vid.style.position = 'fixed';
-                  vid.style.inset = '0';
-                  vid.style.width = '100vw';
-                  vid.style.height = '100vh';
-                  vid.style.objectFit = 'cover';
-                  vid.style.zIndex = '1';
-                  vid.style.pointerEvents = 'none';
-                  vid.muted = true;
-                  vid.autoplay = true;
-                  vid.playsInline = true;
-                  document.body.appendChild(vid);
-                }
-                vid.srcObject = stream;
-                vid.play();
-              }).catch(()=>{});
-          }
-          if (!nonXrControls && DeviceOrientationControls) {
-            nonXrControls = new DeviceOrientationControls(virtualCam);
-            nonXrControls.connect();
-          }
-          renderer.domElement.style.position = 'fixed';
-          renderer.domElement.style.inset = '0';
-          renderer.domElement.style.zIndex = '2';
-          //=========== 3D AIRCRAFT SPAWN DEFAULT POSITION =======//
-          const dist = WORLD_SPAWN_DISTANCE;
-          obj.position.set(0, 0, -dist);
-          //=========== DEFAULT ROTATION (non-XR preview spawn) — adjust here =======//
-          // yaw (Y) = left/right, pitch (X) = up/down, roll (Z) = tilt
-          obj.rotation.x += SPAWN_ROT_UPDOWN_X;
-          obj.rotation.y += SPAWN_ROT_UPDOWN_Y;
-          obj.rotation.x += SPAWN_ROT_LEFTRIGHT_X;
-          obj.rotation.y += SPAWN_ROT_LEFTRIGHT_Y;
-        }
-        obj.scale.set(1.0,1.0,1.0);
-        scene.add(obj);
-        placed.push(obj);
-        lastPlacedSimple = obj;
-        activeObject = obj;
-        anchorBase = obj.position.clone();
-        placeCount++;
-      }
-      placeBtn.addEventListener('click', () => { try { load3dAircraft(); } catch(_){} });
-      function makeLabel(text, color) {
-        const canvas = document.createElement('canvas');
-        canvas.width = 512; canvas.height = 128;
-        const ctx = canvas.getContext('2d');
-        ctx.clearRect(0,0,canvas.width,canvas.height);
-        // background with rounded rect
-        const radius = 16;
-        ctx.fillStyle = 'rgba(0,0,0,0.85)';
-        ctx.beginPath();
-        ctx.moveTo(radius, 0);
-        ctx.lineTo(canvas.width - radius, 0);
-        ctx.quadraticCurveTo(canvas.width, 0, canvas.width, radius);
-        ctx.lineTo(canvas.width, canvas.height - radius);
-        ctx.quadraticCurveTo(canvas.width, canvas.height, canvas.width - radius, canvas.height);
-        ctx.lineTo(radius, canvas.height);
-        ctx.quadraticCurveTo(0, canvas.height, 0, canvas.height - radius);
-        ctx.lineTo(0, radius);
-        ctx.quadraticCurveTo(0, 0, radius, 0);
-        ctx.closePath();
-        ctx.fill();
-        // text
-        ctx.fillStyle = color || '#ffffff';
-        ctx.font = 'bold 56px system-ui, -apple-system, Segoe UI, Roboto, Arial';
-        ctx.textAlign = 'center';
-        ctx.textBaseline = 'middle';
-        ctx.fillText(String(text).toUpperCase(), canvas.width/2, canvas.height/2);
-        // texture and sprite
-        const tex = new THREE.CanvasTexture(canvas);
-        const mat = new THREE.SpriteMaterial({ map: tex, transparent: true, depthTest: false, depthWrite: false, sizeAttenuation: false });
-        const spr = new THREE.Sprite(mat);
-        spr.userData.texSize = { w: canvas.width, h: canvas.height };
-        spr.renderOrder = 10000;
-        // initial scale; will be updated per-frame to keep readable
-        spr.scale.set(2.4, 0.6, 1);
-        labelSprites.push(spr);
-        return spr;
-      }
-      function setLabelsVisible(show) {
-        try {
-          for (const s of labelSprites) if (s) s.visible = !!show;
-          for (const l of labelLines) if (l) l.visible = !!show;
-          for (const m of overlayMeshes) if (m) m.visible = !!show;
-        } catch (_) {}
-      }
-      async function load3dAircraft() {
-        try {
-          let model = null;
-          const objUrl = 'https://assets.codepen.io/557388/1405+Plane_1.obj';
-          const objLoader = new OBJLoader();
-          try {
-            const resp = await fetch(objUrl, { mode: 'cors' });
-            console.log('[Model] Fetched OBJ text:', resp.ok);
-            const text = await resp.text();
-            model = objLoader.parse(text);
-          } catch (e1) {
-            console.warn('[Model] OBJ fetch failed, trying loader.loadAsync', e1);
-            try {
-              model = await objLoader.loadAsync(objUrl);
-            } catch (e2) {
-              console.warn('[Model] OBJ loadAsync failed, falling back to GLB', e2);
-              const gltfLoader = new GLTFLoader();
-              const glbUrl = 'https://raw.githubusercontent.com/Ysurac/FlightAirMap-3dmodels/master/b788/b788.glb';
-              const gltf = await gltfLoader.loadAsync(glbUrl);
-              model = gltf.scene;
-            }
-          }
-          model.traverse(o => { 
-            if (o.isMesh) { 
-              o.castShadow = true; o.receiveShadow = true; 
-              if (o.material && (o.material.map || o.material.isMeshStandardMaterial || o.material.isMeshPhongMaterial)) {
-                try { o.material.color.setHex(AIRCRAFT_COLOR); } catch(_) {}
-              } else {
-                o.material = new THREE.MeshPhongMaterial({ color: AIRCRAFT_COLOR, specular: 0xffffff, shininess: 50 });
-              }
-            } 
-          });
-          model.scale.set(MODEL_SCALE, MODEL_SCALE, MODEL_SCALE);
-          const root = new THREE.Group();
-          // Fix pivot: move model up so bottom (landing gear area) sits at root origin
-          const tmpBox = new THREE.Box3().setFromObject(model);
-          const minY = tmpBox.min.y;
-          model.position.y += -minY;
-          root.add(model);
-          const sizedBox = new THREE.Box3().setFromObject(root);
-          const sizeVec = new THREE.Vector3(); sizedBox.getSize(sizeVec);
-          const currentLength = Math.max(sizeVec.x, sizeVec.y, sizeVec.z);
-          const scaleFactor = DESIRED_LENGTH_M / (currentLength || 1);
-          root.scale.set(scaleFactor, scaleFactor, scaleFactor);
-          // Position: replace last simple if exists; else in front of camera
-          if (window.__pendingSpawnPosition) {
-            root.position.copy(window.__pendingSpawnPosition);
-          } else {
-            if (renderer.xr.isPresenting) {
-              const xrCam = renderer.xr.getCamera();
-              const dir = new THREE.Vector3(); xrCam.getWorldDirection(dir);
-              const pos = new THREE.Vector3(); xrCam.getWorldPosition(pos);
-              root.position.copy(pos.add(dir.multiplyScalar(WORLD_SPAWN_DISTANCE)));
-            } else {
-              renderer.domElement.style.position = 'fixed';
-              renderer.domElement.style.inset = '0';
-              renderer.domElement.style.zIndex = '2';
-              if (!nonXrControls && DeviceOrientationControls) { nonXrControls = new DeviceOrientationControls(camera); nonXrControls.connect(); }
-              root.position.set(0,0,-WORLD_SPAWN_DISTANCE);
-            }
-          }
-          // Add approximate labels around the aircraft
-          const box = new THREE.Box3().setFromObject(model);
-          const size = new THREE.Vector3(); box.getSize(size);
-          const center = new THREE.Vector3(); box.getCenter(center);
-          const labels = [
-          ];
-          labels.forEach(({text,color,offset}) => {
-            const spr = makeLabel(text, color);
-            spr.position.copy(center.clone().add(offset));
-            spr.renderOrder = 9999;
-            if (spr.material) { spr.material.depthTest = false; spr.material.depthWrite = false; }
-            model.add(spr);
-          });
-      // default: show labels on load
-      setLabelsVisible(true);
-          // ================= DO NOT TOUCH THIS PLACEMENTS =================
-          const blue = new THREE.MeshBasicMaterial({ color: 0x2ea7ff, transparent: true, opacity: 0.85, depthTest:false, depthWrite:false });
-          const orange = new THREE.MeshBasicMaterial({ color: 0xffa429, transparent: true, opacity: 0.85, depthTest:false, depthWrite:false });
-          function mkOverlay(w,h,d, mat){ const m = new THREE.Mesh(new THREE.BoxGeometry(w,h,d), mat); m.renderOrder = 9998; return m; }
-          //============ SLATS (Right, 3 segments) ===============//
-          const slatR = mkOverlay(size.x*0.09, size.y*0.01, size.z*0.03, orange);
-          slatR.position.copy(center.clone().add(new THREE.Vector3(size.x*0.20, size.y*-0.20, size.z*0.07)));
-          const slatR2 = mkOverlay(size.x*0.09, size.y*0.01, size.z*0.03, orange);
-          slatR2.position.copy(center.clone().add(new THREE.Vector3(size.x*0.32, size.y*-0.20, size.z*0.010)));
-          const slatR3 = mkOverlay(size.x*0.09, size.y*0.01, size.z*0.03, orange);
-          slatR3.position.copy(center.clone().add(new THREE.Vector3(size.x*0.43, size.y*-0.20, size.z*-0.04)));
-          slatR.rotation.y += Math.PI / 7;
-          slatR2.rotation.y += Math.PI / 7;
-          slatR3.rotation.y += Math.PI / 7;
+      await load3dAircraft();
+    });
 
-          //============ FLAPS (Right, 3 segments) ===============// 
-          const flapR = mkOverlay(size.x * 0.09, size.y * 0.01, size.z * 0.02, orange);
-          flapR.position.copy(center.clone().add(new THREE.Vector3(size.x * 0.11, size.y * -0.22, size.z * -0.01)));
-
-          // To tilt the object to the left (negative rotation on the Y-axis)
-          flapR.rotation.y -= Math.PI / 24; // Tilt to the left by 45 degrees
-          const flapR2 = mkOverlay(size.x*0.09, size.y*0.01, size.z*0.02, orange);
-          flapR2.position.copy(center.clone().add(new THREE.Vector3(size.x*0.19, size.y*-0.23, size.z*-0.02)));
-          flapR2.rotation.y += Math.PI / 9; // Tilt to the right by 45 degrees
-          const flapR3 = mkOverlay(size.x*0.14, size.y*0.01, size.z*0.02, orange);
-          flapR3.position.copy(center.clone().add(new THREE.Vector3(size.x*0.3, size.y*-0.22, size.z*-0.06)));
-          flapR3.rotation.y += Math.PI / 9; // Tilt to the right by 45 degrees
-          //============ SPOILERS (Right, 3 segments) ===============//
-          const spoilerR = mkOverlay(size.x*0.09, size.y*0.01, size.z*0.02, blue);
-          spoilerR.position.copy(center.clone().add(new THREE.Vector3(size.x * 0.11, size.y * -0.22, size.z * -0.0)));
-          spoilerR.rotation.y -= Math.PI / 7; // Tilt to the left by 45 degrees          
-          const spoilerR2 = mkOverlay(size.x*0.09, size.y*0.01, size.z*0.02, blue);
-          spoilerR2.position.copy(center.clone().add(new THREE.Vector3(size.x*0.20, size.y*-0.20, size.z*-0.01)));
-          const spoilerR3 = mkOverlay(size.x*0.14, size.y*0.01, size.z*0.02, blue);
-          spoilerR3.position.copy(center.clone().add(new THREE.Vector3(size.x*0.3, size.y*-0.22, size.z*-0.04)));
-          spoilerR.rotation.y += Math.PI / 9;
-          spoilerR2.rotation.y += Math.PI / 9;
-          spoilerR3.rotation.y += Math.PI / 9;
-          //============ AILERON ===============//
-          const aileronR = mkOverlay(size.x*0.13, size.y*0.01, size.z*0.02, blue);
-          aileronR.position.copy(center.clone().add(new THREE.Vector3(size.x*0.43, size.y*-0.2, size.z*-0.085)));
-          aileronR.rotation.y += Math.PI / 9;          
-          //============ ELEVATORS (split left/right) ===============//
-          const elevatorL = mkOverlay(size.x*0.14, size.y*0.02, size.z*0.02, blue);
-          elevatorL.position.copy(center.clone().add(new THREE.Vector3(-size.x*0.10, size.y*-0.045, -size.z*0.46)));
-          elevatorL.rotation.y -= Math.PI / 12;
-          const elevatorR = mkOverlay(size.x*0.14, size.y*0.02, size.z*0.02, blue);
-          elevatorR.position.copy(center.clone().add(new THREE.Vector3( size.x*0.10, size.y*-0.045, -size.z*0.46)));
-          elevatorR.rotation.y += Math.PI / 12; // Tilt to the right by 45 degrees          //============ RUDDER ===============//
-          const rudder = mkOverlay(size.x * 0.005, size.y * 0.58, size.z * 0.02, blue);
-          rudder.position.copy(center.clone().add(new THREE.Vector3(-size.x * 0, size.y * 0.20, -size.z * 0.45)));
-
-
-          // To tilt the rudder along the Y-axis (left or right tilt)
-          rudder.rotation.x -= Math.PI / 12; // Tilt to the right (positive value) or left (negative value)
-          [slatR, slatR2, slatR3, flapR, flapR2, flapR3, spoilerR, spoilerR2, spoilerR3, aileronR, elevatorL, elevatorR, rudder].forEach(o => { model.add(o); overlayMeshes.push(o); });
-          // Left wing overlays (mirrored) — placements left as symmetric copies
-          const slatL = mkOverlay(size.x*0.09, size.y*0.01, size.z*0.03, orange);
-          slatL.position.copy(center.clone().add(new THREE.Vector3(-size.x*0.20, size.y*-0.20, size.z*0.07)));
-          const slatL2 = mkOverlay(size.x*0.09, size.y*0.01, size.z*0.03, orange);
-          slatL2.position.copy(center.clone().add(new THREE.Vector3(-size.x*0.32, size.y*-0.20, size.z*0.010)));
-          const slatL3 = mkOverlay(size.x*0.09, size.y*0.01, size.z*0.03, orange);
-          slatL3.position.copy(center.clone().add(new THREE.Vector3(-size.x*0.43, size.y*-0.20, size.z*-0.04)));
-          slatL.rotation.y -= Math.PI / 7;
-          slatL2.rotation.y -= Math.PI / 7;
-          slatL3.rotation.y -= Math.PI / 7;
-          const flapL = mkOverlay(size.x*0.09, size.y*0.01, size.z*0.02, orange);
-          flapL.position.copy(center.clone().add(new THREE.Vector3(-size.x*0.11, size.y*-0.22, size.z*-0.01)));
-          flapL.rotation.y += Math.PI / 24;
-          const flapL2 = mkOverlay(size.x*0.09, size.y*0.01, size.z*0.02, orange);
-          flapL2.position.copy(center.clone().add(new THREE.Vector3(-size.x*0.19, size.y*-0.23, size.z*-0.02)));
-          flapL2.rotation.y -= Math.PI / 9;
-          const flapL3 = mkOverlay(size.x*0.14, size.y*0.01, size.z*0.02, orange);
-          flapL3.position.copy(center.clone().add(new THREE.Vector3(-size.x*0.30, size.y*-0.22, size.z*-0.06)));
-          flapL3.rotation.y -= Math.PI / 9;
-          const spoilerL = mkOverlay(size.x*0.09, size.y*0.01, size.z*0.02, blue);
-          spoilerL.position.copy(center.clone().add(new THREE.Vector3(-size.x*0.11, size.y*-0.22, size.z*-0.00)));
-          spoilerL.rotation.y += Math.PI / 11;
-          const spoilerL2 = mkOverlay(size.x*0.09, size.y*0.01, size.z*0.02, blue);
-          spoilerL2.position.copy(center.clone().add(new THREE.Vector3(-size.x*0.20, size.y*-0.20, size.z*-0.01)));
-          spoilerL2.rotation.y -= Math.PI / 9;
-          const spoilerL3 = mkOverlay(size.x*0.14, size.y*0.01, size.z*0.02, blue);
-          spoilerL3.position.copy(center.clone().add(new THREE.Vector3(-size.x*0.30, size.y*-0.22, size.z*-0.04)));
-          spoilerL3.rotation.y -= Math.PI / 9;
-          const aileronL = mkOverlay(size.x*0.13, size.y*0.01, size.z*0.02, blue);
-          aileronL.position.copy(center.clone().add(new THREE.Vector3(-size.x*0.43, size.y*-0.2, size.z*-0.085)));
-          aileronL.rotation.y -= Math.PI / 9;
-          [slatL, slatL2, slatL3, flapL, flapL2, flapL3, spoilerL, spoilerL2, spoilerL3, aileronL].forEach(o => { model.add(o); overlayMeshes.push(o); });
-
-          // ===== PART DESCRIPTIONS =====
-          const PART_DESCRIPTIONS = {
-            'AILERONS': 'Located on the outer part of each wing. They control the roll of the aircraft by moving up on one wing and down on the other, causing the airplane to tilt left or right.',
-            'ELEVATORS': 'Found on the horizontal tail (horizontal stabilizer). It controls the pitch of the aircraft, allowing the nose to move up or down.',
-            'RUDDER': "Positioned on the vertical tail (vertical stabilizer). It controls the yaw, which moves the aircraft's nose left or right.",
-            'FLAPS': 'Located on the inner section of the wings. They increase lift and drag, helping the aircraft during takeoff and landing by allowing slower flight speeds.',
-            'SLATS': 'Installed on the front edge of the wings. They improve lift at low speeds and help prevent stalling during takeup and landing.',
-            'SPOILERS': 'Panels on the top of the wings that reduce lift and increase drag. They are used to help the aircraft descend faster or slow down after landing.',
-          };
-
-          function addCallout(target, text, offset) {
-            const spr = makeLabel(String(text).toUpperCase(), '#ffffff');
-            spr.scale.set(1.1, 0.28, 1);
-            const labelPos = target.position.clone().add(offset || new THREE.Vector3(0, 0.22, 0));
-            spr.position.copy(labelPos);
-            spr.renderOrder = 10000;
-            if (spr.material) { spr.material.depthTest = false; spr.material.depthWrite = false; }
-            // Tag for popup
-            spr.userData.partKey = String(text).toUpperCase();
-            spr.userData.isPartLabel = true;
-            const geom = new THREE.BufferGeometry().setFromPoints([target.position.clone(), labelPos.clone()]);
-            const mat = new THREE.LineBasicMaterial({ color: 0xffffff, transparent: true, opacity: 0.95, depthTest: false, depthWrite: false });
-            const line = new THREE.Line(geom, mat);
-            line.renderOrder = 9999;
-            model.add(spr);
-            model.add(line);
-          labelLines.push(line);
-          }
-          addCallout(slatR, 'SLATS', new THREE.Vector3(-size.x*0.0, size.y*0.18, size.z*0.10));
-          addCallout(spoilerR, 'SPOILERS', new THREE.Vector3(-size.x*0.0, size.y*0.28, size.z*0.02));
-          addCallout(flapR, 'FLAPS', new THREE.Vector3(size.x*0.0, size.y*0.16, -size.z*0.08));
-          addCallout(aileronR, 'AILERONS', new THREE.Vector3(size.x*0.0, size.y*0.22, -size.z*0.02));
-          addCallout(elevatorR, 'ELEVATORS', new THREE.Vector3(-size.x*0, size.y*0.2, -size.z*0));
-          addCallout(rudder, 'RUDDER', new THREE.Vector3(-size.x*0.0, size.y*0.50, -size.z*0));
-          // Left wing callouts (mirrored)
-          addCallout(slatL, 'SLATS', new THREE.Vector3(size.x*0.0, size.y*0.18, size.z*0.10));
-          addCallout(spoilerL, 'SPOILERS', new THREE.Vector3(size.x*0.0, size.y*0.28, size.z*0.02));
-          addCallout(flapL, 'FLAPS', new THREE.Vector3(-size.x*0.0, size.y*0.16, -size.z*0.08));
-          addCallout(aileronL, 'AILERONS', new THREE.Vector3(-size.x*0.0, size.y*0.22, -size.z*0.02));
-
-          // ===== POPUP RAYCASTER (set up once per model load) =====
-          (function setupLabelClick() {
-            const popup = document.getElementById('partPopup');
-            const popupOverlay = document.getElementById('partPopupOverlay');
-            const popupTitle = document.getElementById('popupTitle');
-            const popupBody = document.getElementById('popupBody');
-            const popupClose = document.getElementById('popupClose');
-
-            function showPopup(key) {
-              const desc = PART_DESCRIPTIONS[key];
-              if (!desc) return;
-              popupTitle.textContent = key;
-              popupBody.textContent = desc;
-              popup.classList.add('visible');
-              popupOverlay.classList.add('visible');
-            }
-            function hidePopup() {
-              popup.classList.remove('visible');
-              popupOverlay.classList.remove('visible');
-            }
-            popupClose.addEventListener('click', hidePopup);
-            popupOverlay.addEventListener('click', hidePopup);
-
-            // Remove any previous raycaster listener to avoid duplicates
-            if (window.__labelClickHandler) {
-              renderer.domElement.removeEventListener('click', window.__labelClickHandler);
-              renderer.domElement.removeEventListener('touchend', window.__labelClickHandler);
-            }
-
-            const raycaster = new THREE.Raycaster();
-            const mouse = new THREE.Vector2();
-
-            window.__labelClickHandler = function(e) {
-              // Ignore if popup is already open
-              if (popup.classList.contains('visible')) return;
-              const rect = renderer.domElement.getBoundingClientRect();
-              let cx, cy;
-              if (e.touches) {
-                cx = e.changedTouches[0].clientX;
-                cy = e.changedTouches[0].clientY;
-              } else {
-                cx = e.clientX;
-                cy = e.clientY;
-              }
-              mouse.x = ((cx - rect.left) / rect.width) * 2 - 1;
-              mouse.y = -((cy - rect.top) / rect.height) * 2 + 1;
-              const cam = renderer.xr.isPresenting ? renderer.xr.getCamera() : camera;
-              raycaster.setFromCamera(mouse, cam);
-              const hits = raycaster.intersectObjects(labelSprites, false);
-              for (const hit of hits) {
-                if (hit.object.userData && hit.object.userData.isPartLabel) {
-                  showPopup(hit.object.userData.partKey);
-                  break;
-                }
-              }
-            };
-
-            renderer.domElement.addEventListener('click', window.__labelClickHandler);
-            renderer.domElement.addEventListener('touchend', window.__labelClickHandler, { passive: true });
-          })();
-          scene.add(root);
-          placed.push(root);
-          activeObject = root;
-          anchorBase = root.position.clone();
-          try {
-            for (let i = 0; i < 20; i++) adjustScale(0.9);
-            //=========== DEFAULT ROTATION FOR 3D AIRCRAFT (after load) =======//
-            // no roll tilt on spawn
-            activeObject.rotation.x += SPAWN_ROT_UPDOWN_X;
-            activeObject.rotation.y += SPAWN_ROT_UPDOWN_Y;
-            activeObject.rotation.x += SPAWN_ROT_LEFTRIGHT_X;
-            activeObject.rotation.y += SPAWN_ROT_LEFTRIGHT_Y;
-          } catch (_) {}
-        } catch (e) {
-          alert('Failed to load 3D aircraft.');
-        }
-      }
-      load3dBtn.addEventListener('click', async () => {
-        try {
-          if (!window._previewStream) { await window.__startCam(); }
-          load3dAircraft();
-        } catch(_) {}
-      });
-      window.__autoPlaceAfterCamera = () => {
-        try { load3dAircraft(); } catch(e){}
-      };
-      // Only load after camera starts
-      // Waiting for user to press "Start AR Aircraft" before starting camera
-      window.__moduleReady = true;
-      resetBtn.addEventListener('click', () => {
-        placed.forEach(o => scene.remove(o));
-        placed.length = 0;
-        placeCount = 0;
-      });
-      window.__startCam = async () => {
-        try {
-          const stream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: { ideal: 'environment' } }, audio: false });
-          let vid = document.getElementById('previewVideo');
-          if (!vid) {
-            vid = document.createElement('video');
-            vid.id = 'previewVideo';
-            vid.style.position = 'fixed';
-            vid.style.inset = '0';
-            vid.style.width = '100vw';
-            vid.style.height = '100vh';
-            vid.style.objectFit = 'cover';
-            vid.style.zIndex = '1';
-            vid.style.pointerEvents = 'none';
-            vid.muted = true;
-            vid.autoplay = true;
-            vid.playsInline = true;
-            document.body.appendChild(vid);
-          }
-          vid.srcObject = stream;
-          await vid.play();
-          window._previewStream = stream;
-          startCamBtn.textContent = 'Stop Camera';
-          try { startCamBtn.removeEventListener('click', __startHandler); } catch(_) {}
-          startCamBtn.onclick = () => {
-            if (window._previewStream) {
-              window._previewStream.getTracks().forEach(t => t.stop());
-              window._previewStream = null;
-            }
-            const v = document.getElementById('previewVideo');
-            if (v) v.remove();
-            startCamBtn.textContent = 'Start Camera';
-            startCamBtn.onclick = null;
-            try { startCamBtn.addEventListener('click', __startHandler); } catch(_) {}
-          };
-        } catch (e) {
-          unsupported.classList.add('active');
-          unsupportedMsg.innerHTML = '<h2>Camera blocked</h2><p>Allow camera permissions in site settings, then try again.</p>';
-        }
-      };
-      __startHandler = () => window.__startCam();
-      startCamBtn.addEventListener('click', __startHandler);
-      renderer.xr.addEventListener('sessionstart', async () => {
-        const v = document.getElementById('previewVideo');
-        if (v) v.remove();
-        if (window._previewStream) {
-          window._previewStream.getTracks().forEach(t => t.stop());
-          window._previewStream = null;
-        }
-        startCamBtn.textContent = 'Start Camera';
-      });
-      (function addGestureControls(){
-        const pointers = new Map();
-        let lastPinch = 0;
-        let lastX = 0;
-        window.addEventListener('pointerdown', (e) => {
-          pointers.set(e.pointerId, { x: e.clientX, y: e.clientY });
-          lastX = e.clientX;
-        });
-        window.addEventListener('pointermove', (e) => {
-          if (!activeObject) return;
-          const p = pointers.get(e.pointerId);
-          if (!p) return;
-          const dx = e.clientX - p.x;
-          const dy = e.clientY - p.y;
-          pointers.set(e.pointerId, { x: e.clientX, y: e.clientY });
-          if (pointers.size === 1) {
-            activeObject.rotation.y += dx * 0.005;
-          } else if (pointers.size === 2) {
-            const arr = Array.from(pointers.values());
-            const d = Math.hypot(arr[0].x - arr[1].x, arr[0].y - arr[1].y);
-            if (lastPinch) {
-              const delta = d - lastPinch;
-              const s = Math.max(0.5, Math.min(4, activeObject.scale.x + delta * 0.200));
-              activeObject.scale.set(s, s, s);
-            }
-            lastPinch = d;
-          }
-        });
-        window.addEventListener('pointerup', (e) => {
-          pointers.delete(e.pointerId);
-          if (pointers.size < 2) lastPinch = 0;
-        });
-        window.addEventListener('pointercancel', (e) => {
-          pointers.delete(e.pointerId);
-          if (pointers.size < 2) lastPinch = 0;
-        });
-      })();
-    </script>
-  </head>
-  <body>
-    <div id="app">
-      <div id="overlay" class="overlay">
-        <div class="title">
-          <img src="asset/airplane.png" alt="Aircraft Logo">
-          AR Aircraft
-        </div>      
-      </div>
-      <div id="startOverlay">
-        <button id="startArBtn" class="title start-btn"><img src="asset/airplane.png" alt="Aircraft Logo"> Start AR Aircraft</button>
-      </div>
-      <div id="unsupported" class="unsupported">
-        <div>
-          <h2>Markerless AR not available</h2>
-          <p>Use Chrome on Android with HTTPS, then press Start AR.</p>
-        </div>
-      </div>
-      <button class="btn" id="startCam" style="bottom:60px">Start Camera</button>
-    </div>
-
-    <!-- Part Description Popup -->
-    <div id="partPopupOverlay"></div>
-    <div id="partPopup" role="dialog" aria-modal="true" aria-labelledby="popupTitle">
-      <div class="popup-header">
-        <span class="popup-title" id="popupTitle"></span>
-        <button class="popup-close" id="popupClose" aria-label="Close">&#x2715;</button>
-      </div>
-      <div class="popup-body" id="popupBody"></div>
-    </div>
-    <script src="https://cdn.jsdelivr.net/npm/three@0.155.0/examples/js/loaders/GLTFLoader.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/three@0.155.0/examples/js/loaders/OBJLoader.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/three@0.155.0/examples/js/controls/DeviceOrientationControls.js"></script>
-    <script>
-      (function(){
-        const enableStartOverlay = 1;
-        function startCameraFallback(){
-          try {
-            if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
-              alert('Camera not available in this browser');
-              return;
-            }
-            navigator.mediaDevices.getUserMedia({ video: { facingMode: 'environment' }, audio: false })
-              .then(stream => {
-                var vid = document.getElementById('previewVideo');
-                if (!vid) {
-                  vid = document.createElement('video');
-                  vid.id = 'previewVideo';
-                  vid.style.position = 'fixed';
-                  vid.style.inset = '0';
-                  vid.style.width = '100vw';
-                  vid.style.height = '100vh';
-                  vid.style.objectFit = 'cover';
-                  vid.style.zIndex = '1';
-                  vid.style.pointerEvents = 'none';
-                  vid.muted = true;
-                  vid.autoplay = true;
-                  vid.playsInline = true;
-                  document.body.appendChild(vid);
-                }
-                vid.srcObject = stream;
-                vid.play().catch(function(){});
-              })
-              .catch(function(){
-                alert('Please allow camera permissions in site settings');
-              });
-          } catch(e) {
-            alert('Camera error: ' + e);
-          }
-        }
-        window.__startCam = window.__startCam || startCameraFallback;
-        var startArBtn = document.getElementById('startArBtn');
-        var startOverlay = document.getElementById('startOverlay');
-        if (startOverlay) {
-          if (!enableStartOverlay) {
-            startOverlay.style.display = 'none';
-          } else {
-            startOverlay.style.display = '';
-          }
-        }
-        if (startArBtn) startArBtn.addEventListener('click', function(){
-          window.__startRequested = true;
-          startCameraFallback();
-          if (startOverlay) startOverlay.style.display = 'none';
-          setTimeout(function(){
-            if (window.__autoPlaceAfterCamera) window.__autoPlaceAfterCamera();
-          }, 200);
-        });
-        var btn = document.getElementById('startCam');
-        if (btn) btn.addEventListener('click', function(){
-          window.__startRequested = true;
-          startCameraFallback();
-          setTimeout(function(){
-            if (window.__autoPlaceAfterCamera) window.__autoPlaceAfterCamera();
-            else {
-              var tries = 0;
-              var iv = setInterval(function(){
-                if (window.__autoPlaceAfterCamera) { window.__autoPlaceAfterCamera(); clearInterval(iv); }
-                if (++tries > 20) clearInterval(iv);
-              }, 200);
-            }
-          }, 200);
-        });
-      })();
-    </script>
-    <script>
-      (function(){
-        if (window.__moduleReady) return;
-        if (!window.THREE) return;
-        var renderer = new THREE.WebGLRenderer({ antialias:true, alpha:true });
-        renderer.setPixelRatio(window.devicePixelRatio);
-        renderer.setSize(window.innerWidth, window.innerHeight);
-        renderer.setClearColor(0x000000, 0);
-        document.body.appendChild(renderer.domElement);
-        var scene = new THREE.Scene();
-        var camera = new THREE.PerspectiveCamera(70, window.innerWidth / window.innerHeight, 0.01, 1000);
-        var hemi = new THREE.HemisphereLight(0xffffff, 0x444444, 1);
-        scene.add(hemi);
-        var dir = new THREE.DirectionalLight(0xffffff, 0.9);
-        dir.position.set(1,2,1);
-        scene.add(dir);
-        var placed = [];
-        var placeCount = 0;
-        var lastPlacedSimple = null;
-        var nonXrControls = null;
-        function createButton(id, text, bottom) {
-          var b = document.getElementById(id);
-          if (b) return b;
-          b = document.createElement('button');
-          b.id = id;
-          b.className = 'btn';
-          b.style.bottom = bottom;
-          b.textContent = text;
-          document.body.appendChild(b);
-          return b;
-        }
-        var placeBtn = createButton('placePlane', 'Place Aircraft', '108px');
-        var load3dBtn = createButton('load3d', 'Load 3D Aircraft', '252px');
-        var resetBtn = createButton('resetScene', 'Reset', '204px');
-        var zoomInBtn = createButton('zoomIn', 'Zoom In', '348px');
-        var zoomOutBtn = createButton('zoomOut', 'Zoom Out', '300px');
-        var moveUpBtn = createButton('moveUp', 'Move Up', '396px');
-        var moveDownBtn = createButton('moveDown', 'Move Down', '444px');
-        var tiltUpBtn = createButton('tiltUp', 'Tilt Up', '492px');
-        var tiltDownBtn = createButton('tiltDown', 'Tilt Down', '540px');
-        var tiltLeftBtn = createButton('tiltLeft', 'Tilt Left', '588px');
-        var tiltRightBtn = createButton('tiltRight', 'Tilt Right', '636px');
-        var anchorBase = null;
-        function adjustScale(f){ var o = window.__activeObject; if (!o) return; var s = Math.max(0.5, Math.min(4, o.scale.x * f)); o.scale.set(s,s,s) }
-        zoomInBtn.addEventListener('click', function(){ adjustScale(1.1) });
-        zoomOutBtn.addEventListener('click', function(){ adjustScale(0.9) });
-        function adjustHeight(d){ var o = window.__activeObject; if (!o) return; o.position.y += d }
-        function adjustPitch(d){ var o = window.__activeObject; if (!o) return; o.rotation.x += d }
-        function adjustOverlayTiltY(d){ overlayMeshes.forEach(function(m){ m.rotation.y += d }) }
-        moveUpBtn.addEventListener('click', function(){ adjustHeight(0.5) });
-        moveDownBtn.addEventListener('click', function(){ adjustHeight(-0.5) });
-        tiltUpBtn.addEventListener('click', function(){ adjustPitch(0.05) });
-        tiltDownBtn.addEventListener('click', function(){ adjustPitch(-0.05) });
-        tiltLeftBtn.addEventListener('click', function(){ adjustOverlayTiltY(0.20) });
-        tiltRightBtn.addEventListener('click', function(){ adjustOverlayTiltY(-0.20) });
-        var joy = document.getElementById('joy');
-        if (!joy) {
-          joy = document.createElement('div');
-          joy.id = 'joy';
-          joy.style.position = 'fixed';
-          joy.style.left = '16px';
-          joy.style.bottom = '16px';
-          joy.style.width = '120px';
-          joy.style.height = '120px';
-          joy.style.borderRadius = '60px';
-          joy.style.background = 'rgba(255,255,255,0.08)';
-          joy.style.border = '1px solid rgba(255,255,255,0.25)';
-          joy.style.zIndex = '2000';
-          joy.style.touchAction = 'none';
-          var knob = document.createElement('div');
-          knob.id = 'joyKnob';
-          knob.style.position = 'absolute';
-          knob.style.left = '50%';
-          knob.style.top = '50%';
-          knob.style.width = '48px';
-          knob.style.height = '48px';
-          knob.style.marginLeft = '-24px';
-          knob.style.marginTop = '-24px';
-          knob.style.borderRadius = '24px';
-          knob.style.background = 'rgba(255,255,255,0.2)';
-          knob.style.border = '1px solid rgba(255,255,255,0.35)';
-          joy.appendChild(knob);
-          document.body.appendChild(joy);
-          var dragging = false;
-          var center = { x:60, y:60 };
-          function applyControl(dx,dy){
-            var o = window.__activeObject; if (!o) return;
-            o.rotation.y += dx * 0.005;
-            var px = o.position.x + dx * 0.01;
-            var pz = o.position.z + -dy * 0.01;
-            if (!anchorBase) anchorBase = o.position.clone();
-            var offX = px - anchorBase.x;
-            var offZ = pz - anchorBase.z;
-            var r = Math.sqrt(offX*offX + offZ*offZ);
-            var limit = 10;
-            if (r > limit) {
-              var k = limit / r;
-              o.position.x = anchorBase.x + offX * k;
-              o.position.z = anchorBase.z + offZ * k;
-            } else {
-              o.position.x = px;
-              o.position.z = pz;
-            }
-          }
-          joy.addEventListener('pointerdown', function(e){ dragging = true; joy.setPointerCapture(e.pointerId) });
-          joy.addEventListener('pointermove', function(e){
-            if (!dragging) return;
-            var rect = joy.getBoundingClientRect();
-            var x = e.clientX - rect.left;
-            var y = e.clientY - rect.top;
-            var dx = x - center.x;
-            var dy = y - center.y;
-            var mag = Math.hypot(dx,dy);
-            var max = 40;
-            var nx = mag > max ? dx * (max / mag) : dx;
-            var ny = mag > max ? dy * (max / mag) : dy;
-            knob.style.transform = 'translate('+nx+'px,'+ny+'px)';
-            applyControl(nx, ny);
-          });
-          joy.addEventListener('pointerup', function(){ dragging = false; knob.style.transform = 'translate(0,0)' });
-        }
-        function place() {
-          var obj = makeAirplane();
-          if (!nonXrControls && THREE.DeviceOrientationControls) {
-            nonXrControls = new THREE.DeviceOrientationControls(camera);
-            nonXrControls.connect();
-          }
-          renderer.domElement.style.position = 'fixed';
-          renderer.domElement.style.inset = '0';
-          renderer.domElement.style.zIndex = '2';
-          var dist = 15;
-          obj.position.set(0, 0, -dist);
-          obj.rotation.y = Math.random() * Math.PI * 2;
-          scene.add(obj);
-          placed.push(obj);
-          lastPlacedSimple = obj;
-          window.__activeObject = obj;
-          anchorBase = obj.position.clone();
-          placeCount++;
-        }
-        placeBtn.addEventListener('click', async function(){
-          try {
-            if (!window._previewStream) await window.__startCam();
-            load3d();
-          } catch(e) {}
-        });
-        function makeLabel(text, color) {
-          var canvas = document.createElement('canvas');
-          canvas.width = 256; canvas.height = 64;
-          var ctx = canvas.getContext('2d');
-          ctx.fillStyle = 'rgba(0,0,0,0.6)'; ctx.fillRect(0,0,256,64);
-          ctx.fillStyle = color || '#ffffff';
-          ctx.font = '28px sans-serif';
-          ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
-          ctx.fillText(text, 128, 32);
-          var tex = new THREE.CanvasTexture(canvas);
-          var mat = new THREE.SpriteMaterial({ map: tex, transparent: true });
-          var spr = new THREE.Sprite(mat);
-          spr.scale.set(0.8, 0.2, 1);
-          return spr;
-        }
-        function load3d() {
-          try {
-            var objUrl = 'https://assets.codepen.io/557388/1405+Plane_1.obj';
-            var loader = new THREE.OBJLoader();
-            var model = null;
-            fetch(objUrl, { mode: 'cors' })
-              .then(function(resp){ return resp.text() })
-              .then(function(text){
-                model = loader.parse(text);
-                model.traverse(function(o){ if (o.isMesh) { o.castShadow = true; o.receiveShadow = true; if (o.material && (o.material.map || o.material.isMeshStandardMaterial || o.material.isMeshPhongMaterial)) { try { o.material.color.setHex(0xEAF4FF) } catch(e){} } else { o.material = new THREE.MeshPhongMaterial({ color: 0xEAF4FF, specular: 0xffffff, shininess: 50 }); } } });
-                model.scale.set(1,1,1);
-              var root = new THREE.Group();
-              var box = new THREE.Box3().setFromObject(model);
-              var minY = box.min.y;
-              model.position.y += -minY;
-              root.add(model);
-              var sized = new THREE.Box3().setFromObject(root);
-              var size = new THREE.Vector3(); sized.getSize(size);
-              var currentLen = Math.max(size.x, size.y, size.z);
-              var factor = 64 / (currentLen || 1);
-              root.scale.set(factor, factor, factor);
-              if (lastPlacedSimple) {
-                root.position.copy(lastPlacedSimple.position);
-                root.rotation.copy(lastPlacedSimple.rotation);
-                scene.remove(lastPlacedSimple);
-                placed.splice(placed.indexOf(lastPlacedSimple), 1);
-                lastPlacedSimple = null;
-              } else {
-                renderer.domElement.style.position = 'fixed';
-                renderer.domElement.style.inset = '0';
-                renderer.domElement.style.zIndex = '2';
-                if (!nonXrControls && THREE.DeviceOrientationControls) { nonXrControls = new THREE.DeviceOrientationControls(camera); nonXrControls.connect(); }
-                root.position.set(0,0,-15);
-              }
-              var box = new THREE.Box3().setFromObject(model);
-              var size = new THREE.Vector3(); box.getSize(size);
-              var center = new THREE.Vector3(); box.getCenter(center);
-              [
-                { t:'Ailerons', c:'#ff6b6b', o:new THREE.Vector3(size.x*0.2, size.y*0.15, size.z*0.45) },
-                { t:'Flaps', c:'#ffd166', o:new THREE.Vector3(-size.x*0.05, size.y*0.1, size.z*0.30) },
-                { t:'Spoilers', c:'#ffa500', o:new THREE.Vector3(0, size.y*0.2, 0) },
-                { t:'Slats', c:'#d7dce3', o:new THREE.Vector3(size.x*0.25, size.y*0.05, size.z*0.15) },
-                { t:'Elevators', c:'#00a3ff', o:new THREE.Vector3(-size.x*0.35, size.y*0.15, -size.z*0.35) },
-                { t:'Rudder', c:'#59d97a', o:new THREE.Vector3(-size.x*0.38, size.y*0.35, -size.z*0.38) },
-              ].forEach(function(x){
-                var spr = makeLabel(x.t, x.c);
-                spr.position.copy(center.clone().add(x.o));
-                model.add(spr);
-              });
-              scene.add(root);
-              placed.push(root);
-              window.__activeObject = root;
-            }).catch(function(e){
-              try {
-                loader.load(objUrl, function(obj){
-                  model = obj;
-                  model.traverse(function(o){ if (o.isMesh) { o.castShadow = true; o.receiveShadow = true; if (o.material && (o.material.map || o.material.isMeshStandardMaterial || o.material.isMeshPhongMaterial)) { try { o.material.color.setHex(0xEAF4FF) } catch(e){} } else { o.material = new THREE.MeshPhongMaterial({ color: 0xEAF4FF, specular: 0xffffff, shininess: 50 }); } } });
-                  model.scale.set(1,1,1);
-                  var root = new THREE.Group();
-                  var box = new THREE.Box3().setFromObject(model);
-                  var minY = box.min.y;
-                  model.position.y += -minY;
-                  root.add(model);
-                  var sized = new THREE.Box3().setFromObject(root);
-                  var size = new THREE.Vector3(); sized.getSize(size);
-                  var currentLen = Math.max(size.x, size.y, size.z);
-                  var factor = 64 / (currentLen || 1);
-                  root.scale.set(factor, factor, factor);
-                  scene.add(root);
-                  placed.push(root);
-                  window.__activeObject = root;
-                }, function(){}, function(){ place(); });
-              } catch(_){ place(); }
-            });
-          } catch(e) { place(); }
-        }
-        load3dBtn.addEventListener('click', async function(){
-          try {
-            if (!window._previewStream) await window.__startCam();
-            load3d();
-          } catch(e) {}
-        });
-        resetBtn.addEventListener('click', function(){
-          placed.forEach(function(o){ scene.remove(o) });
-          placed.length = 0;
-          placeCount = 0;
-        });
-        window.addEventListener('resize', function(){
-          renderer.setSize(window.innerWidth, window.innerHeight);
-          camera.aspect = window.innerWidth / window.innerHeight;
-          camera.updateProjectionMatrix();
-        });
-        function loop(){
-          if (nonXrControls) nonXrControls.update();
-          renderer.render(scene, camera);
-          requestAnimationFrame(loop);
-        }
-        loop();
-        window.__autoPlaceAfterCamera = window.__autoPlaceAfterCamera || function(){ try{ load3d() }catch(e){} };
-        (function addGesture(){
-          var pointers = {};
-          var lastPinch = 0;
-          window.addEventListener('pointerdown', function(e){ pointers[e.pointerId] = { x:e.clientX, y:e.clientY } });
-          window.addEventListener('pointermove', function(e){
-            var obj = window.__activeObject;
-            if (!obj) return;
-            var p = pointers[e.pointerId];
-            if (!p) return;
-            var dx = e.clientX - p.x;
-            var dy = e.clientY - p.y;
-            pointers[e.pointerId] = { x:e.clientX, y:e.clientY };
-            var ids = Object.keys(pointers);
-            if (ids.length === 1) {
-              obj.rotation.y += dx * 0.005;
-            } else if (ids.length === 2) {
-              var a = pointers[ids[0]], b = pointers[ids[1]];
-              var d = Math.hypot(a.x - b.x, a.y - b.y);
-              if (lastPinch) {
-                var delta = d - lastPinch;
-                var s = Math.max(0.5, Math.min(4, obj.scale.x + delta * 0.002));
-                obj.scale.set(s, s, s);
-              }
-              lastPinch = d;
-            }
-          });
-          function end(e){ delete pointers[e.pointerId]; var ids = Object.keys(pointers); if (ids.length < 2) lastPinch = 0; }
-          window.addEventListener('pointerup', end);
-          window.addEventListener('pointercancel', end);
-        })();
-      })();
-    </script>
-  </body>
+    // Mark module as ready so no fallback script runs
+    window.__moduleReady = true;
+  </script>
+</body>
 </html>
