@@ -46,9 +46,9 @@
   </div>
 
   <!-- Zoom -->
-  <div style="position:fixed;bottom:12px;left:50%;transform:translateX(-50%);display:flex;gap:10px;z-index:2000">
-    <button id="zoomIn" style="width:40px;height:40px;border-radius:50%;border:none;background:rgba(30,30,50,0.8);color:#fff;font-size:1.3rem;cursor:pointer">+</button>
-    <button id="zoomOut" style="width:40px;height:40px;border-radius:50%;border:none;background:rgba(30,30,50,0.8);color:#fff;font-size:1.3rem;cursor:pointer">−</button>
+  <div style="position:fixed;bottom:18px;left:50%;transform:translateX(-50%);display:flex;gap:14px;z-index:2500;touch-action:manipulation">
+    <button id="zoomIn" style="width:50px;height:50px;border-radius:50%;border:2px solid rgba(100,180,255,0.4);background:rgba(20,20,40,0.9);color:#fff;font-size:1.5rem;cursor:pointer;touch-action:manipulation;-webkit-tap-highlight-color:transparent;user-select:none">+</button>
+    <button id="zoomOut" style="width:50px;height:50px;border-radius:50%;border:2px solid rgba(100,180,255,0.4);background:rgba(20,20,40,0.9);color:#fff;font-size:1.5rem;cursor:pointer;touch-action:manipulation;-webkit-tap-highlight-color:transparent;user-select:none">−</button>
   </div>
 
   <script type="importmap">
@@ -228,7 +228,39 @@
   // ===== CONTROLS =====
   function setupControls() {
     var pointers={}, lastPinch=0;
-    renderer.domElement.addEventListener('pointerdown',function(e){pointers[e.pointerId]={x:e.clientX,y:e.clientY};renderer.domElement.setPointerCapture(e.pointerId);autoRotate=false});
+
+    // Zoom buttons FIRST — before canvas listeners so they work independently
+    function setupZoomBtn(id, factor) {
+      var el = document.getElementById(id);
+      var timer = null;
+      function doZoom() {
+        if (!activeObject) { console.log('[Zoom] no activeObject'); return; }
+        var s = activeObject.scale.x * factor;
+        s = Math.max(0.1, Math.min(10, s));
+        activeObject.scale.set(s, s, s);
+        console.log('[Zoom] scale:', s.toFixed(3));
+      }
+      el.addEventListener('pointerdown', function(e) {
+        e.preventDefault(); e.stopPropagation();
+        doZoom();
+        timer = setInterval(doZoom, 80);
+      }, {passive: false});
+      el.addEventListener('pointerup', function(e) { e.preventDefault(); e.stopPropagation(); clearInterval(timer); timer = null; }, {passive: false});
+      el.addEventListener('pointerleave', function(e) { e.stopPropagation(); clearInterval(timer); timer = null; });
+      el.addEventListener('pointercancel', function(e) { e.stopPropagation(); clearInterval(timer); timer = null; });
+      el.addEventListener('touchstart', function(e) { e.stopPropagation(); }, {passive: false});
+      el.addEventListener('touchend', function(e) { e.stopPropagation(); }, {passive: false});
+      el.addEventListener('click', function(e) { e.preventDefault(); e.stopPropagation(); doZoom(); }, {passive: false});
+    }
+    setupZoomBtn('zoomIn', 1.15);
+    setupZoomBtn('zoomOut', 0.85);
+
+    // Canvas rotation/pinch — only if event target is the canvas itself
+    renderer.domElement.addEventListener('pointerdown',function(e){
+      if (e.target !== renderer.domElement) return;
+      pointers[e.pointerId]={x:e.clientX,y:e.clientY};
+      autoRotate=false;
+    });
     renderer.domElement.addEventListener('pointermove',function(e){
       if(!activeObject)return;var p=pointers[e.pointerId];if(!p)return;
       var dx=e.clientX-p.x,dy=e.clientY-p.y;pointers[e.pointerId]={x:e.clientX,y:e.clientY};
@@ -239,8 +271,14 @@
     renderer.domElement.addEventListener('pointerup',function(e){delete pointers[e.pointerId];if(Object.keys(pointers).length<2)lastPinch=0;if(Object.keys(pointers).length===0)setTimeout(function(){autoRotate=true},2000)});
     renderer.domElement.addEventListener('pointercancel',function(e){delete pointers[e.pointerId];if(Object.keys(pointers).length<2)lastPinch=0});
 
-    document.getElementById('zoomIn').onclick=function(){if(activeObject){var s=Math.min(10,activeObject.scale.x*1.15);activeObject.scale.set(s,s,s)}};
-    document.getElementById('zoomOut').onclick=function(){if(activeObject){var s=Math.max(0.1,activeObject.scale.x*0.85);activeObject.scale.set(s,s,s)}};
+    // Mouse wheel zoom (desktop)
+    renderer.domElement.addEventListener('wheel',function(e){
+      if(!activeObject)return;
+      e.preventDefault();
+      var factor = e.deltaY > 0 ? 0.9 : 1.1;
+      var s = Math.max(0.1, Math.min(10, activeObject.scale.x * factor));
+      activeObject.scale.set(s,s,s);
+    },{passive:false});
 
     createDpad('left',function(dx,dy){if(!activeObject)return;activeObject.rotation.y+=dx*0.04;activeObject.rotation.x+=dy*0.04});
     createDpad('right',function(dx,dy){if(!activeObject)return;activeObject.position.x+=dx*0.12;activeObject.position.y+=dy*0.12});
